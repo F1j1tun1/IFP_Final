@@ -52,13 +52,27 @@ simulation, injected GameState, extra gold or public test harness.
 
 ## CI and publication
 
-The workflow includes Windows/Linux .NET checks and a Linux browser job for
-Chromium and Firefox against the packaged release. Configuration alone is not a
-pass. Exact remote workflow and live-site results are recorded below after they run.
+[GitHub Actions run 42262998402](https://github.com/F1j1tun1/IFP_Final/actions/runs/42262998402)
+passed for implementation commit `085d277` on 6 November 2026:
 
-Publication is pending GitHub account authorization and the reviewed merge.
-Do not treat the intended URL as a verified deployment until this section records
-an actual successful release and live browser checks.
+- Windows and Ubuntu: Release build, all 83 tests and both simulator scenarios.
+- Ubuntu: trimmed GitHub Pages package built with the unmodified .NET SDK.
+- Chromium 151.0.7922.34: controls, responsive layouts, ten-wave victory,
+  persistence, defeat/restart, corrupted/blocked storage and repeated transitions.
+- Firefox 153.0: complete defeat, record persistence and fresh restart.
+- Both browsers: no console errors, failed requests or HTTP errors.
+
+The downloaded CI browser report is saved in `docs/browser-results-ci.json`.
+[Part 2 pull request](https://github.com/F1j1tun1/IFP_Final/pull/1) contains the
+reviewed implementation and checks. Core/Application source is unchanged.
+
+GitHub CLI is authenticated as Chingiskhan07 and the branch is pushed. Publication
+still requires the owner to select **Settings > Pages > Build and deployment >
+Source > GitHub Actions**: the collaborator has push permission but no admin
+permission, and the Pages API returned HTTP 404. Once enabled, run **Deploy Pages**
+from `main` after its checks pass, then verify the public URL. No live-site pass is
+claimed while this prerequisite remains outstanding. This is a hosting setting,
+not an additional development stage.
 
 ## Reproduce
 

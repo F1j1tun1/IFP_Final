@@ -1,7 +1,173 @@
-﻿@page "/"
-
+@page "/"
+@implements IAsyncDisposable
+@inject GameSession Session
+@inject BrowserHighScoreStore Records
+@inject IJSRuntime JS
 <PageTitle>Chrono Bastion</PageTitle>
+<div class="app-shell">
+    <header class="topbar"><button class="brand" aria-label="Chrono Bastion home" @onclick="() => { if (!menu) Confirm(true); }">◈ <span>CHRONO <b>BASTION</b></span></button><span class="edition">PERIMETER DEFENCE / 01</span><button @onclick="OpenHelp">Field manual</button></header>
+    <main>
+        @if (menu)
+        {
+            <MainMenu Ready="ready" RecordLabel="@RecordLabel" OnPlay="NewGame" OnHelp="OpenHelp" />
+        }
+        else
+        {
+            <div class="mission-heading"><div><p class="eyebrow">OPERATION / HOLD THE CORE</p><h1>Outer perimeter</h1></div><span class="phase">@(Session.State.IsPaused ? "PAUSED" : Session.State.Phase.ToString().ToUpperInvariant())</span></div>
+            <GameHud State="Session.State" />
+            <div class="game-layout"><section class="battle-section" aria-label="Battle controls">
+                <GameBoard State="Session.State" SelectedPad="selectedPad" OnSelect="Select" Effects="effects" Bursts="bursts" />
+                <nav class="mobile-pad-list" aria-label="Select a build pad">
+                    @foreach (var pad in BastionMap.Pads) { <button aria-label="Select pad @pad.Id" aria-pressed="@(selectedPad == pad.Id)" @onclick="() => Select(pad.Id)">@pad.Id</button> }
+                </nav><div class="battle-toolbar">
+                    <div class="wave-brief">
+                    @if (Session.State.Phase == GamePhase.Planning)
+                    { <strong>Wave @(Session.State.WaveNumber + 1) approaching</strong><span>@UpcomingWave</span> }
+                    else { <strong>@(Session.State.IsPaused ? "Defences on hold" : "Defend the core")</strong><span>@Session.State.Enemies.Length active · @Session.State.PendingEnemies incoming</span> }
+                    </div>
+                    <div class="battle-actions">
+                    @if (Session.State.Phase == GamePhase.Planning)
+                    { <button class="primary" @onclick="() => Dispatch(new GameCommand.StartWave())">Start wave @(Session.State.WaveNumber + 1) →</button> }
+                    else if (Session.State.Phase == GamePhase.Combat)
+                    { <button class="primary" @onclick="() => Dispatch(new GameCommand.SetPaused(!Session.State.IsPaused))">@(Session.State.IsPaused ? "Resume" : "Pause")</button> }
+                    <button disabled="@Session.State.IsFinished" aria-label="Speed x@(Session.State.SpeedMultiplier)" @onclick="() => Dispatch(new GameCommand.SetSpeed(Session.State.SpeedMultiplier == 1 ? 2 : 1))">×@Session.State.SpeedMultiplier</button>
+                    </div>
+                </div>
+                <p class="announcement" role="status">@notice</p>
+                <div class="secondary-actions"><button @onclick="() => Confirm(false)">Restart run</button><button @onclick="() => Confirm(true)">Main menu</button><span>Tap a socket to build or manage a tower.</span></div>
+            </section><TowerPanel State="Session.State" SelectedPad="selectedPad" OnCommand="Dispatch" Error="@error" /></div>
+        }
+        @if (Records.Warning is { } warning) { <p role="status" class="storage-warning">@warning</p> }
+        @if (browserWarning is not null) { <p role="status" class="storage-warning">@browserWarning</p> }
+    </main>
+    <footer><span>CHRONO BASTION</span><span>ONE CORE. TEN WAVES. YOUR DEFENCE.</span></footer>
+</div>
+@if (help) { <HelpDialog OnClose="() => help = false" /> }
+@if (confirmation)
+{
+    <div class="modal-backdrop"><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-title" tabindex="-1" data-dialog>
+        <p class="eyebrow">ABANDON CURRENT RUN</p><h2 id="confirm-title">Start fresh?</h2><p>This run will be discarded. Unfinished scores are not saved.</p>
+        <button class="primary wide" @onclick="ConfirmDiscard">@(returnToMenu ? "Discard and return to menu" : "Restart from wave one")</button><button class="wide" @onclick="() => confirmation = false">Keep this run</button>
+    </section></div>
+}
+@if (!menu && Session.State.IsFinished && !help)
+{ <ResultDialog State="Session.State" RecordLabel="@RecordLabel" OnPlayAgain="NewGame" OnMenu="ShowMenu" /> }
 
-<h1>Chrono Bastion</h1>
+@code {
+    private int? selectedPad;
+    private string? error, browserWarning;
+    private string notice = "Select a pad and build your first tower.";
+    private bool menu = true, ready, help, confirmation, returnToMenu, disposed;
+    private readonly CancellationTokenSource stop = new();
+    private readonly System.Diagnostics.Stopwatch clock = System.Diagnostics.Stopwatch.StartNew();
+    private readonly List<ShotEffect> effects = [];
+    private readonly List<BurstEffect> bursts = [];
+    private long effectId;
+    private Task? loop;
+    private Task persistence = Task.CompletedTask;
+    private IJSObjectReference? module, visibility, dialogs;
+    private DotNetObjectReference<Home>? reference;
+    private string RecordLabel => Records.Record.Match(r => $"{r.Score.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)} points · {r.WavesCleared}/10 waves", () => "No completed runs");
+    private string UpcomingWave => string.Join(" · ", WavePlanner.Schedule(Session.State.WaveNumber + 1).GroupBy(s => s.Kind).Select(g => $"{g.Count()} {EnemyCatalog.Get(g.Key).Name}"));
 
-<p>Defend the core. Hold for ten waves.</p>
+    protected override void OnInitialized() => Session.Updated += Updated;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        await Records.LoadAsync();
+        try
+        {
+            module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/browser.js");
+            reference = DotNetObjectReference.Create(this);
+            visibility = await module.InvokeAsync<IJSObjectReference>("watchVisibility", reference);
+            dialogs = await module.InvokeAsync<IJSObjectReference>("watchDialogs");
+        }
+        catch (JSException) { browserWarning = "Browser integration is unavailable. Pause before leaving this tab."; }
+        if (disposed) return;
+        ready = true;
+        loop = RunClockAsync();
+        StateHasChanged();
+    }
+    private void Select(int pad) { selectedPad = pad; error = null; }
+    private void Dispatch(GameCommand command) => error = Session.Dispatch(command).Match(_ => (string?)null, e => e.Message);
+    private void NewGame() { Dispatch(new GameCommand.Restart()); menu = false; }
+    private void ShowMenu() { Pause(); menu = true; }
+    private void Pause() { if (Session.State.Phase == GamePhase.Combat && !Session.State.IsPaused) Dispatch(new GameCommand.SetPaused(true)); }
+    private void OpenHelp() { Pause(); help = true; }
+    private void Confirm(bool toMenu) { Pause(); returnToMenu = toMenu; confirmation = true; }
+    private void ConfirmDiscard() { Dispatch(new GameCommand.Restart()); menu = returnToMenu; }
+    [JSInvokable] public Task OnHidden() => InvokeAsync(() => { Pause(); notice = "Tab hidden: battle paused. Choose Resume to continue."; StateHasChanged(); });
+    private void Updated(GameTransition transition)
+    {
+        foreach (var item in transition.Events)
+        {
+            switch (item)
+            {
+                case GameEvent.ShotFired shot:
+                    effects.Add(new(++effectId, BastionMap.Pads.First(p => p.Id == shot.PadId).Position, shot.Target, shot.Kind, clock.Elapsed + TimeSpan.FromMilliseconds(180)));
+                    break;
+                case GameEvent.TowerBuilt built: notice = $"{built.Kind} deployed on pad {built.PadId}."; break;
+                case GameEvent.EnemyKilled killed:
+                    bursts.Add(new(++effectId, killed.Position, clock.Elapsed + TimeSpan.FromMilliseconds(220)));
+                    break;
+                case GameEvent.TowerUpgraded upgraded: notice = $"Pad {upgraded.PadId} upgraded to level {upgraded.Level}."; break;
+                case GameEvent.TowerSold sold: notice = $"Tower sold for {sold.Refund} gold."; break;
+                case GameEvent.WaveStarted started: notice = $"Wave {started.Number} incoming."; break;
+                case GameEvent.WaveCleared cleared: notice = $"Wave {cleared.Number} cleared. +{cleared.Gold} gold · +{cleared.Points} points."; break;
+                case GameEvent.GameEnded:
+                    persistence = SaveRecordAsync(persistence, transition.State);
+                    break;
+                case GameEvent.GameRestarted:
+                    effects.Clear(); bursts.Clear(); selectedPad = null; error = null; confirmation = false; help = false;
+                    notice = "Fresh run. Select a pad and prepare your defences.";
+                    break;
+            }
+        }
+        if (effects.Count > 100) effects.RemoveRange(0, effects.Count - 100);
+        if (bursts.Count > 50) bursts.RemoveRange(0, bursts.Count - 50);
+        StateHasChanged();
+    }
+    private async Task SaveRecordAsync(Task previous, GameState finished)
+    {
+        await previous;
+        await Records.SaveFinishedAsync(finished);
+        if (!disposed) await InvokeAsync(StateHasChanged);
+    }
+    private async Task RunClockAsync()
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(33));
+        var previous = clock.Elapsed;
+        try
+        {
+            while (await timer.WaitForNextTickAsync(stop.Token))
+            {
+                await InvokeAsync(() =>
+                {
+                    var now = clock.Elapsed;
+                    var removed = effects.RemoveAll(e => e.Expires <= now) + bursts.RemoveAll(e => e.Expires <= now);
+                    if (!menu) Session.Advance(now - previous);
+                    previous = now;
+                    if (removed > 0) StateHasChanged();
+                });
+            }
+        }
+        catch (OperationCanceledException) when (stop.IsCancellationRequested) { }
+    }
+    public async ValueTask DisposeAsync()
+    {
+        disposed = true;
+        Session.Updated -= Updated;
+        stop.Cancel();
+        if (loop is not null) await loop;
+        await persistence;
+        foreach (var listener in new[] { visibility, dialogs })
+        {
+            if (listener is null) continue;
+            try { await listener.InvokeVoidAsync("dispose"); await listener.DisposeAsync(); }
+            catch (JSDisconnectedException) { }
+        }
+        reference?.Dispose();
+        if (module is not null) await module.DisposeAsync();
+        stop.Dispose();
+    }
+}

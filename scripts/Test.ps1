@@ -2,13 +2,13 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot
 Push-Location $repoRoot
 try {
-    dotnet restore ChronoBastion.sln
+    dotnet restore ChronoBastion.sln -m:1
     if ($LASTEXITCODE -ne 0) { throw 'Dependency restore failed.' }
 
-    dotnet build ChronoBastion.sln -c Release --no-restore
+    dotnet build ChronoBastion.sln -m:1 -c Release --no-restore
     if ($LASTEXITCODE -ne 0) { throw 'Build failed.' }
 
-    dotnet test ChronoBastion.sln -c Release --no-build --collect:'XPlat Code Coverage' --settings coverage.runsettings
+    dotnet test ChronoBastion.sln -m:1 -c Release --no-build --collect:'XPlat Code Coverage' --settings coverage.runsettings
     if ($LASTEXITCODE -ne 0) { throw 'Tests failed.' }
 
     dotnet run --project tools/ChronoBastion.Simulator -c Release --no-build -- all

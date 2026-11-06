@@ -1,0 +1,15 @@
+<div class="modal-backdrop"><section class="dialog help" role="dialog" aria-modal="true" aria-labelledby="help-title" tabindex="-1" data-dialog>
+    <p class="eyebrow">FIELD MANUAL</p><h2 id="help-title">Hold the line</h2>
+    <p>Tap a numbered pad, then choose a tower. Earn gold by destroying enemies and clearing waves. Upgrade to level three, change target priority, or sell for 70% of your investment.</p>
+    <p>Start every wave when ready. Clear all ten to win. If the core falls, the entire run ends. Play again starts fresh; only your best finished-run record stays on this browser.</p>
+    <h3>Your arsenal</h3>
+    @foreach (var tower in TowerCatalog.All)
+    { <p><strong class="@tower.Kind.ToString().ToLowerInvariant()">@tower.Name · @tower.AtLevel(1).Price gold</strong><br />@tower.Description</p> }
+    <h3>Know the enemy</h3>
+    @foreach (var enemy in EnemyCatalog.All)
+    { <p><strong>@enemy.Name</strong> · @enemy.Health base health · @enemy.Armor.ToString("P0") armor<br />@GameQueries.Describe(EnemyCatalog.Spawn(enemy.Kind, 1, 1))</p> }
+    <p><strong>Targeting:</strong> First follows the enemy closest to the core. Strongest chooses the most health. Nearest chooses the closest enemy in range.</p>
+    <p>Pause to plan. Speed ×2 advances combat twice as fast. Opening this manual or hiding the tab pauses combat; choose Resume when you return.</p>
+    <button class="primary wide" @onclick="OnClose">Close manual</button>
+</section></div>
+@code { [Parameter] public EventCallback OnClose { get; set; } }

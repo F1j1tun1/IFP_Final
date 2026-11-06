@@ -1,84 +1,114 @@
 # Chrono Bastion
 
-A single-player tower defence project for a functional programming course.
-Defend an energy core against ten waves using Pulse, Mortar and Frost towers.
-Losing ends the run; only the best completed-run score is saved in the browser.
+A single-player C# tower defence game. Protect an energy core through ten waves
+with Pulse, Mortar and Frost towers. Built with .NET 10 and standalone Blazor
+WebAssembly; the entire battle runs in your browser.
 
-**Team:** Yerkingali Saruar and Ainabek Chingiskhan, IT-2502.
+**Team:** Yerkingali Saruar (F1j1tun1) and Ainabek Chingiskhan (Chingiskhan07), IT-2502.
 
-## Current status
+![Chrono Bastion in combat](docs/screenshots/combat.png)
 
-**Part 1 is implemented:** game rules, immutable state, commands, functional
-helpers, session timing, high-score format, automated tests and a console simulator.
-The Blazor project builds, but its home page is only an application shell.
-**The playable graphical interface and live deployment belong to Part 2.**
+## Play
 
-## Start here
+The release destination is [GitHub Pages](https://f1j1tun1.github.io/IFP_Final/).
+See [verification](docs/VERIFICATION.md) for the deployment status and checks.
 
-- **Chingiskhan:** follow [Part 2 handoff](docs/PART_2_HANDOFF.md).
-- **His GPT:** use [the complete continuation prompt](docs/PART_2_GPT_PROMPT.md).
-- [Architecture and state flow](docs/ARCHITECTURE.md)
-- [Public API and integration examples](docs/API_CONTRACT.md)
-- [Game rules and balance](docs/GAME_DESIGN.md)
-- [Visual and mobile specification](docs/UI_SPEC.md)
-- [Testing and verification evidence](docs/VERIFICATION.md)
-- [Deployment instructions](docs/DEPLOYMENT.md)
-- [Functional concepts and defense notes](docs/DEFENSE.md)
-- [Assessment coverage](docs/REQUIREMENTS_MATRIX.md)
+1. Choose **Deploy defences**. Select a numbered pad, then a tower.
+2. **Pulse** fires rapidly; **Mortar** hits groups; **Frost** slows enemies.
+3. Select a tower to upgrade, sell or choose First, Strongest or Nearest targeting.
+4. Start each wave when ready. You can build during combat or pause to plan.
+5. Clear all ten waves to win. A destroyed core ends the whole run.
 
-## Run on Windows
+**Pause / Resume** stops combat. **×1 / ×2** changes speed. Opening the field
+manual or hiding the tab pauses a battle; returning never resumes automatically.
+Restarting or leaving a run asks for confirmation. **Play again** starts from
+wave one with 300 gold and 20 core health.
 
-Install the **.NET 10 SDK**, Git, and VS Code with C# Dev Kit. Open a terminal in
-the repository root, the folder containing `ChronoBastion.sln`.
+Only the best finished-run record is stored locally. There are no checkpoints,
+saved ongoing games, accounts or online leaderboard. Clearing browser data clears
+the record. Blocked or damaged storage does not prevent play.
+
+On a phone, tap the board or use the large numbered pad buttons below it, then
+choose an explicit action. On a keyboard, Tab moves focus and Enter activates
+buttons; Enter or Space selects a board pad. The field manual explains enemy
+armor, targeting and the final boss.
+
+## Run in VS Code on Windows
+
+Install the **.NET 10 SDK**, Git and VS Code with C# Dev Kit. Clone and open the
+folder containing `ChronoBastion.sln`:
 
 ```powershell
 git clone https://github.com/F1j1tun1/IFP_Final.git
 cd IFP_Final
-dotnet --list-sdks
+code .
 dotnet restore
-dotnet build -c Release
-dotnet test -c Release --no-build
-dotnet run --project tools/ChronoBastion.Simulator -c Release --no-build -- all
 dotnet run --project src/ChronoBastion.Web --launch-profile http
 ```
 
-Open the HTTP address printed by the last command (currently
-`http://localhost:5042`). A title-only home page is expected until Part 2 is done.
-The simulator runs both a legal winning strategy and an undefended losing run.
-Its `victory` and `defeat` arguments run either scenario separately.
+Open `http://localhost:5042`. Keep the terminal open; Ctrl+C stops the server.
+The same dotnet commands work on Linux and macOS with .NET 10.
 
-The same dotnet commands work on macOS/Linux with the .NET 10 SDK. For the helper
-scripts there, install PowerShell 7 and use `pwsh`. No database or API key is needed.
-
-## Project layout
-
-```text
-src/ChronoBastion.Core          Pure game rules and immutable data
-src/ChronoBastion.Application   Session timing and high-score serialization
-src/ChronoBastion.Web           Blazor interface and browser adapters (Part 2)
-tests/ChronoBastion.Tests       Core and application tests
-tools/ChronoBastion.Simulator   Headless full-game examples
-docs/                         Design, contracts, handoff and defense
-scripts/                      Repeatable verification and Pages packaging
-```
-
-## Verification and release
+## Verify
 
 ```powershell
 pwsh -File scripts/Test.ps1
 pwsh -File scripts/Publish-Pages.ps1
 ```
 
-CI builds and tests on Windows and Linux. Publishing produces
-`artifacts/pages/wwwroot`; it does not publish anything by itself.
-The manual **Deploy Pages** workflow is for the finished Part 2 game.
-The intended URL is `https://f1j1tun1.github.io/IFP_Final/`; consult
-[deployment status](docs/DEPLOYMENT.md) before treating it as live.
+The first script runs unit/component tests and both complete simulations. The
+second produces the static release in `artifacts/pages/wwwroot`, with the
+`/IFP_Final/` base path, `.nojekyll` and a 404 fallback.
 
-## References
+For the actual browser suite, also install **Node.js 24** and run:
 
-The supplied assessment document defines the grading criteria. Alex Yagur's
-*Functional Programming with C#* (Packt, 2024) supplies the course concepts and
-tower-defence exercise context. The engine here is an original implementation.
-The supplied book and assessment files are not redistributed in the repository.
-See [asset credits](docs/ASSETS.md) for the project's visual/audio asset policy.
+```powershell
+pwsh -File scripts/Test-Browser.ps1
+```
+
+It installs isolated Chromium/Firefox test browsers, packages the release and
+plays through ordinary interface actions. It checks a complete victory, defeat,
+fresh restart, storage failure, controls and mobile viewports. It creates real
+screenshots in `docs/screenshots` and a report in `artifacts/browser-results.json`.
+No cheat controls or modified game state are used. Allow several minutes.
+
+To verify an existing deployment with the same suite:
+
+```powershell
+$env:GAME_URL = 'https://f1j1tun1.github.io/IFP_Final/'
+npm run test:browser
+```
+
+## Project structure
+
+| Folder | Responsibility |
+|---|---|
+| `src/ChronoBastion.Core` | Pure rules, immutable records, map and catalogs |
+| `src/ChronoBastion.Application` | Single session, fixed-step time and record codec |
+| `src/ChronoBastion.Web` | SVG battlefield, reusable components, browser adapters |
+| `tests/ChronoBastion.Tests` | Core and Application tests |
+| `tests/ChronoBastion.Web.Tests` | Component and browser-storage adapter tests |
+| `tests/browser` | Playwright checks of the packaged game |
+| `tools/ChronoBastion.Simulator` | Legal winning and undefended losing runs |
+
+## Documentation and presentation
+
+- [Architecture and state flow](docs/ARCHITECTURE.md)
+- [Public API](docs/API_CONTRACT.md)
+- [Rules and tested strategy](docs/GAME_DESIGN.md)
+- [Interface specification](docs/UI_SPEC.md)
+- [Verification evidence and limitations](docs/VERIFICATION.md)
+- [GitHub Pages deployment](docs/DEPLOYMENT.md)
+- [Assessment coverage](docs/REQUIREMENTS_MATRIX.md)
+- [Defense notes](docs/DEFENSE.md)
+- [Asset credits](docs/ASSETS.md)
+
+There are exactly two ownership parts: Yerkingali supplied the engine, session,
+simulator, domain tests and architecture; Ainabek supplied the interface, browser
+integration, interface tests, final presentation and release work.
+
+The supplied assessment defines the grading criteria. Alex Yagur's *Functional
+Programming with C#* (Packt, 2024) supplies the course concepts and tower-defence
+exercise context. The book and assessment files are not redistributed.
+
+[Download the final presentation](docs/presentation/Chrono-Bastion.pptx). Speaker notes include a demo sequence and defense explanations.

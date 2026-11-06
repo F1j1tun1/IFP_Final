@@ -1,0 +1,25 @@
+<section class="main-menu">
+    <div class="menu-copy"><p class="eyebrow">TACTICAL TOWER DEFENCE / BASTION 01</p>
+        <h1>CHRONO<br /><span>BASTION</span></h1>
+        <p class="intro">The last core is yours to defend.<br />Build your line. Hold for ten waves.</p>
+        <button class="primary play" disabled="@(!Ready)" @onclick="OnPlay">@(Ready ? "Deploy defences →" : "Initializing…")</button>
+        <button class="text-button" @onclick="OnHelp">How to play</button>
+        <div class="record"><span>LOCAL RECORD</span><strong>@RecordLabel</strong><small>Only completed runs count. Every new run starts fresh.</small></div>
+    </div>
+    <div class="menu-art" aria-hidden="true">
+        <svg viewBox="0 0 500 500"><defs><radialGradient id="menu-light"><stop stop-color="#5ce7d7" stop-opacity=".3"/><stop offset="1" stop-color="#5ce7d7" stop-opacity="0"/></radialGradient></defs>
+            <circle cx="250" cy="250" r="240" fill="url(#menu-light)"/>
+            <g fill="none" stroke="#294650"><circle cx="250" cy="250" r="205"/><circle cx="250" cy="250" r="165" stroke-dasharray="4 14"/><path d="M 250 15 V 80 M 250 420 V 485 M 15 250 H 80 M 420 250 H 485"/></g>
+            <path d="M 250 100 L 380 175 V 325 L 250 400 L 120 325 V 175 Z" fill="#152735" stroke="#54767c" stroke-width="3"/>
+            <path d="M 250 135 L 350 193 V 307 L 250 365 L 150 307 V 193 Z" fill="#0c1a27" stroke="#4dd8c5" stroke-width="2"/>
+            <path d="M 250 174 L 300 250 L 250 326 L 200 250 Z" fill="#67ebd4"/>
+            <path d="M 250 197 L 276 250 L 250 303 L 224 250 Z" fill="#d5fff4"/>
+        </svg><span>CORE ONLINE <b>●</b></span>
+    </div>
+</section>
+@code {
+    [Parameter] public bool Ready { get; set; }
+    [Parameter] public string RecordLabel { get; set; } = "No completed runs";
+    [Parameter] public EventCallback OnPlay { get; set; }
+    [Parameter] public EventCallback OnHelp { get; set; }
+}

@@ -1,0 +1,10 @@
+{
+  "name": "chrono-bastion-browser-tests",
+  "private": true,
+  "scripts": {
+    "test:browser": "node tests/browser/game.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
+}

@@ -1,0 +1,15 @@
+<div class="modal-backdrop"><section class="dialog result" role="dialog" aria-modal="true" aria-labelledby="result-title" tabindex="-1" data-dialog>
+    <p class="eyebrow">RUN COMPLETE</p><h2 id="result-title">@(State.Phase == GamePhase.Won ? "Victory" : "Defeat")</h2>
+    <p>@(State.Phase == GamePhase.Won ? "The core stands. The perimeter is secure." : "The core has fallen. A new defence starts from wave one.")</p>
+    <div class="result-score">@State.Score.ToString("N0", System.Globalization.CultureInfo.InvariantCulture) <small>POINTS</small></div>
+    <dl class="stats"><div><dt>Waves cleared</dt><dd>@State.WavesCleared / @GameRules.TotalWaves</dd></div><div><dt>Enemies destroyed</dt><dd>@State.Kills</dd></div><div><dt>Core integrity</dt><dd>@State.CoreHealth</dd></div></dl>
+    <p>Local record: <strong>@RecordLabel</strong></p>
+    <button class="primary wide" @onclick="OnPlayAgain">Play again</button><button class="wide" @onclick="OnMenu">Main menu</button>
+</section></div>
+@code {
+    [Parameter, EditorRequired] public GameState State { get; set; } = default!;
+    [Parameter] public string RecordLabel { get; set; } = "No completed runs";
+    [Parameter] public EventCallback OnPlayAgain { get; set; }
+    [Parameter] public EventCallback OnMenu { get; set; }
+}
+

@@ -9,7 +9,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $publishDir = Join-Path $repoRoot 'artifacts/pages'
 Push-Location $repoRoot
 try {
-    dotnet publish src/ChronoBastion.Web -c Release -o $publishDir
+    dotnet publish src/ChronoBastion.Web -m:1 -c Release -o $publishDir
     if ($LASTEXITCODE -ne 0) { throw 'Web publish failed.' }
 
     $siteDir = Join-Path $publishDir 'wwwroot'

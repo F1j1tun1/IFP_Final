@@ -27,3 +27,29 @@ jobs:
         if: runner.os == 'Linux'
         shell: pwsh
         run: ./scripts/Publish-Pages.ps1
+
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium firefox
+      - name: Package the release
+        shell: pwsh
+        run: ./scripts/Publish-Pages.ps1
+      - run: npm run test:browser
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: browser-evidence
+          path: |
+            artifacts/browser-results.json
+            docs/screenshots

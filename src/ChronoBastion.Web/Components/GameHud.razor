@@ -1,0 +1,8 @@
+<div class="hud" aria-label="Run statistics">
+    <div><span>Core integrity</span><strong data-testid="health">@State.CoreHealth <small>/ @GameRules.StartingHealth</small></strong></div>
+    <div><span>Gold reserves</span><strong class="gold" data-testid="gold">@State.Gold</strong></div>
+    <div><span>Wave</span><strong data-testid="wave">@State.WaveNumber <small>/ @GameRules.TotalWaves</small></strong></div>
+    <div><span>Score</span><strong data-testid="score">@State.Score.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)</strong></div>
+</div>
+@code { [Parameter, EditorRequired] public GameState State { get; set; } = default!; }
+

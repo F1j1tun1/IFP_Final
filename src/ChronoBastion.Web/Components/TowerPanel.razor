@@ -1,0 +1,49 @@
+<aside class="tower-panel" aria-label="Tower controls">
+    <p class="eyebrow">DEFENCE SYSTEMS</p>
+    @if (SelectedPad is not int pad)
+    {
+        <h2>Choose your position</h2><p>Select a numbered socket on the battlefield to build a tower.</p>
+        <div class="panel-hint">Cover the bends.<br />Combine firepower with frost.</div>
+    }
+    else if (State.Towers.FirstOrDefault(t => t.PadId == pad) is { } tower)
+    {
+        var stats = TowerCatalog.Get(tower.Kind).AtLevel(tower.Level);
+        <h2>@tower.Kind <small>· Pad @pad</small></h2>
+        <p>Level @tower.Level / @GameRules.MaxTowerLevel</p>
+        <dl class="stats"><div><dt>Damage</dt><dd>@stats.Damage</dd></div><div><dt>Range</dt><dd>@stats.Range</dd></div><div><dt>Fire interval</dt><dd>@((stats.FireIntervalTicks * GameRules.TickSeconds).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))s</dd></div></dl>
+        <label for="priority">Target priority</label>
+        <select id="priority" value="@tower.Priority" @onchange="e => ChangePriority(pad, e)">
+            @foreach (var priority in Enum.GetValues<TargetPriority>()) { <option value="@priority">@priority</option> }
+        </select>
+        @if (GameQueries.UpgradePrice(tower).Match<int?>(p => p, () => null) is int price)
+        {
+            <button class="primary wide" @onclick="() => OnCommand.InvokeAsync(new GameCommand.UpgradeTower(pad))">Upgrade · @price gold</button>
+            @if (State.Gold < price) { <p class="hint">Need @(price - State.Gold) more gold.</p> }
+        }
+        else { <p class="max-level">Max level reached</p> }
+        <button class="wide" @onclick="() => OnCommand.InvokeAsync(new GameCommand.SellTower(pad))">Sell · +@GameRules.SellRefund(tower) gold</button>
+    }
+    else
+    {
+        <h2>Build on pad @pad</h2>
+        @foreach (var definition in TowerCatalog.All)
+        {
+            var price = definition.AtLevel(1).Price;
+            <button class="build-card @definition.Kind.ToString().ToLowerInvariant()" @onclick="() => OnCommand.InvokeAsync(new GameCommand.BuildTower(pad, definition.Kind))">
+                <span><strong>@definition.Name</strong><b>@price <small>G</small></b></span>
+                <small>@definition.Description</small>
+                @if (State.Gold < price) { <em>Need @(price - State.Gold) more gold</em> }
+            </button>
+        }
+    }
+    @if (!string.IsNullOrEmpty(Error)) { <p role="alert" class="error">@Error</p> }
+</aside>
+@code {
+    [Parameter, EditorRequired] public GameState State { get; set; } = default!;
+    [Parameter] public int? SelectedPad { get; set; }
+    [Parameter] public string? Error { get; set; }
+    [Parameter] public EventCallback<GameCommand> OnCommand { get; set; }
+    private Task ChangePriority(int pad, ChangeEventArgs e) => Enum.TryParse<TargetPriority>(e.Value?.ToString(), out var priority)
+        ? OnCommand.InvokeAsync(new GameCommand.SetTargetPriority(pad, priority)) : Task.CompletedTask;
+}
+

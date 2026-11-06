@@ -42,12 +42,11 @@ test, but no engine redesign or additional return-to-Part-1 stage is planned.
 | Application/GameSession.cs | The single mutable state owner and elapsed-time accumulator |
 | Application/HighScore.cs | Finished-run records, comparison, validated JSON serialization |
 | Web/Program.cs | Blazor startup; GameSession already registered as scoped |
-| Web/Pages/Home.razor | Replace the starter shell with the final application |
+| Web/Pages/Home.razor | Screen composition, one clock, commands and event consumption |
 
-Recommended Part 2 additions are `Components/GameBoard.razor`, `GameHud.razor`,
+Part 2 components and adapters are `Components/GameBoard.razor`, `GameHud.razor`,
 `TowerPanel.razor`, `MainMenu.razor`, `ResultDialog.razor`, `HelpDialog.razor`,
-`Services/BrowserHighScoreStore.cs`, and `wwwroot/js/browser.js`. These names are
-suggestions; the public Core/Application API is the stable integration boundary.
+`Services/BrowserHighScoreStore.cs`, and `wwwroot/js/browser.js`. The public components are implemented; the public Core/Application API is the stable integration boundary.
 
 ## State machine
 

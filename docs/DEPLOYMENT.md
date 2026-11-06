@@ -1,8 +1,6 @@
 # Free deployment to GitHub Pages
 
-**Part 1 status:** release packaging and a manual deployment workflow are supplied.
-The finished game has not been published by Part 1. Deploy after completing and
-checking Part 2; the starter home page is not a finished game.
+The complete graphical game is packaged by the manual deployment workflow. See VERIFICATION.md for the exact tested commit and current publication status.
 
 The intended public URL is https://f1j1tun1.github.io/IFP_Final/ . GitHub Pages is
 available for public repositories on GitHub Free. This application needs only

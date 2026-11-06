@@ -1,65 +1,73 @@
 # Verification evidence
 
-This file distinguishes the implemented foundation from the unfinished graphical
-game. Part 2 must add its own actual results; unchecked items are not claims of success.
+Date: 6 November 2026. Baseline: `65122e3c075b58689bc2a75229446e34c3a042c4`.
+The graphical interface uses the original Core/Application API without changes.
 
-## Part 1 local verification
+## Baseline reproduced before integration
 
-Date: 6 November 2026. Environment: Windows x64, .NET SDK 10.0.401.
+Windows x64, local .NET SDK 10.0.403:
 
-| Check | Result |
+- 70 existing tests passed, none failed or skipped.
+- Defended simulator: Won, wave 10, 20 health, 151 kills, 12,090 points, 4,220 ticks.
+- Undefended simulator: Lost in wave 3, zero kills, 300 points, 1,936 ticks.
+- Baseline Release build succeeded with zero warnings/errors.
+
+## Part 2 local checks
+
+| Check | Actual result |
 |---|---|
-| Release build of all five projects | Passed, zero compiler warnings/errors |
-| xUnit tests | 70 passed, zero failed/skipped |
-| Core line / branch coverage | 96.23% / 90.05% |
-| Application line / branch coverage | 98.14% / 96.42% |
-| Legal defended full run | Won wave 10, 20 health, 151 kills, 12090 points |
-| Undefended full run | Lost during wave 3, zero kills, 300 points |
-| Blazor release publish | Passed |
-| Pages package | `/IFP_Final/` base, `.nojekyll`, and 404 fallback produced |
-| Published shell startup in browser | Passed through a local static server at `/IFP_Final/`; Blazor rendered the title and subtitle |
+| `pwsh -File scripts/Test.ps1` | Passed: Release build, 83 tests (70 existing + 13 UI/storage), both simulations |
+| `pwsh -File scripts/Publish-Pages.ps1` | Passed: trimmed static package, `/IFP_Final/` base, `.nojekyll`, 404 fallback |
+| Component boundaries | HUD updates, pad selection, build/upgrade/sell/target callbacks, occupied-pad and insufficient-gold feedback, maximum level, victory/defeat callbacks |
+| Rendering regression | Pads and enemies with the same numeric ID render without duplicate-key failures |
+| Storage adapter | Read once; unfinished run does not save; malformed/unsupported record; blocked storage; best record retained in memory |
+| Chromium packaged release | Passed: 151.0.7922.34, served locally at `/IFP_Final/`; no console/network errors |
+| Browser victory | All ten waves through ordinary UI actions, 151 kills and 12,090 points; reload retained the winning record |
+| Browser defeat and restart | Undefended wave-three defeat, 300 points; normal, corrupted and blocked storage scenarios; new run resets pads/gold/wave/speed |
+| Controls | Build, upgrade, maximum level, sale refund, priority selection, insufficient gold, pause/resume and speed |
+| Visibility | Real adapter called through a browser `visibilitychange` event with `document.hidden` emulated; manual Resume required |
+| Repeated transitions | Three game/menu cycles; subsequent movement remained within the expected one-clock interval; unfinished run not saved |
+| Responsive layouts | 1440px laptop, 390×844 portrait and 844×390 landscape; no horizontal page overflow; every pad selectable by touch emulation |
+| Screenshots | Actual captures in `docs/screenshots`, visually inspected |
+| Presentation | Ten-slide English PPTX, speaker notes, editable text/tables/architecture; all slide renders inspected; package/layout validation passed |
 
-Coverage is collected with coverage.runsettings. It includes Core/Application,
-excludes generated code under obj and code marked GeneratedCode, and does not claim
-coverage of a final graphical UI. Reports are generated under
-tests/ChronoBastion.Tests/TestResults and are not committed.
+The final local Chromium run passed at 22:30 (Asia/Oral). Its report is saved in `docs/browser-results.json`. The browser runner writes its exact success/failure report to
+`artifacts/browser-results.json`. It fails on page exceptions, error-level console
+messages, failed requests and HTTP errors. `BROWSERS=chromium` selects the local
+single-engine run; the default also requires Firefox. There is no accelerated
+simulation, injected GameState, extra gold or public test harness.
 
-The simulator uses ordinary commands and earned resources. It is not a UI
-autoplayer and grants no extra money. Its example winning run takes 4220 fixed
-ticks (211 seconds of active game time at x1); planning time is additional.
+## Environment limitations
+
+- A physical phone was not available. Phone results above are emulated viewports
+  and touch events, not a physical-device claim.
+- Firefox 153.0 crashed before opening a page in the restricted local Windows
+  process environment (exit 3221225477). No local Firefox pass is claimed.
+- Windows MSBuild task-host IPC was unavailable in the restricted environment.
+  Local package-cache task declarations for WebAssembly/ILLink were run in-process
+  to permit verification. This workaround is outside the repository; normal
+  Windows/Linux CI uses unmodified SDK packages. Scripts use one MSBuild worker.
+- No native PowerPoint playback or physical macOS/Linux device check is claimed.
+  The presentation was rendered and structurally validated.
+
+## CI and publication
+
+The workflow includes Windows/Linux .NET checks and a Linux browser job for
+Chromium and Firefox against the packaged release. Configuration alone is not a
+pass. Exact remote workflow and live-site results are recorded below after they run.
+
+Publication is pending GitHub account authorization and the reviewed merge.
+Do not treat the intended URL as a verified deployment until this section records
+an actual successful release and live browser checks.
 
 ## Reproduce
 
 ```powershell
 pwsh -File scripts/Test.ps1
 pwsh -File scripts/Publish-Pages.ps1
+pwsh -File scripts/Test-Browser.ps1
 ```
 
-Individual commands are in README. Core tests cover command errors and transaction
-atomicity, pricing/refunds, upgrades, targeting, armor, splash, frost expiry,
-cooldowns, rewards, path positions, schedules, pause, speed, bounded catch-up,
-restart and corrupt record handling.
-
-## Automated remote checks
-
-The Build and test workflow is configured for Windows and Linux, with an additional
-Pages release build on Linux. Check the workflow run for the exact commit being
-handed off; a configured workflow alone does not prove that a run succeeded.
-
-## Remaining Part 2 checks
-
-- [ ] Real browser startup and gameplay with no console/network errors.
-- [ ] Component tests for action/state/feedback boundaries.
-- [ ] Browser tests for build, upgrade, selling, wave start, pause, speed and results.
-- [ ] A complete browser win and a complete browser loss/restart.
-- [ ] The record survives reload and never saves an unfinished run.
-- [ ] Malformed, unsupported and blocked browser storage do not break play.
-- [ ] Hidden-tab pause, return/resume and repeated game/menu transitions.
-- [ ] Laptop and phone-sized layouts with usable keyboard/touch controls.
-- [ ] Physical phone test, if a phone is available; state explicitly if only emulated.
-- [ ] At least two available browser engines, with exact versions recorded.
-- [ ] Release build and live Pages site work under `/IFP_Final/`, including refresh.
-- [ ] Final presentation and real screenshots match the implementation.
-
-No graphical gameplay, physical-device or live-deployment result is claimed by
-the Part 1 checks above. These remain meaningful work for the second participant.
+Node.js 24 is required only for browser tests. The game itself needs no Node.js,
+server, account or database. Domain coverage settings deliberately include Core
+and Application; they do not represent total interface coverage.

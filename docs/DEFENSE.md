@@ -7,8 +7,7 @@ asked about any part. Both should understand the following explanations.
 
 ## Presentation outline
 
-Prepare an English slide deck after the graphical game is complete. Use actual
-screenshots and measured results. This outline is not a finished slide deck.
+The final deck is [Chrono-Bastion.pptx](presentation/Chrono-Bastion.pptx). It contains ten English slides, real screenshots and speaker notes. Rehearse the demo and questions using the outline below.
 
 | Slide | Content | Approximate time |
 |---|---|---|
@@ -105,7 +104,7 @@ visual setting but deliberately require a completely fresh run after losing.
 
 **What happens when the tab is hidden?** The final UI pauses it and requires manual
 resume. The session also bounds catch-up work so a delayed callback cannot simulate
-an arbitrarily long unseen battle. Part 2 must verify the visibility adapter.
+an arbitrarily long unseen battle. The browser suite verifies the visibility adapter with an emulated hidden-tab event.
 
 **Can the record be cheated?** It is a local convenience, not a competitive online
 ranking. A user controls their own browser storage. No anti-cheat claim is made.

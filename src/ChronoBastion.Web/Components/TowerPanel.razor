@@ -46,4 +46,3 @@
     private Task ChangePriority(int pad, ChangeEventArgs e) => Enum.TryParse<TargetPriority>(e.Value?.ToString(), out var priority)
         ? OnCommand.InvokeAsync(new GameCommand.SetTargetPriority(pad, priority)) : Task.CompletedTask;
 }
-

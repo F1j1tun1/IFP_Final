@@ -5,4 +5,3 @@
     <div><span>Score</span><strong data-testid="score">@State.Score.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)</strong></div>
 </div>
 @code { [Parameter, EditorRequired] public GameState State { get; set; } = default!; }
-

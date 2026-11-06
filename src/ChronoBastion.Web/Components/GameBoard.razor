@@ -86,6 +86,3 @@
     private static readonly string PathPoints = string.Join(" ", BastionMap.Path.Select(p => $"{N(p.X)},{N(p.Y)}"));
     private Task SelectKey(KeyboardEventArgs e, int pad) => e.Key is "Enter" or " " ? OnSelect.InvokeAsync(pad) : Task.CompletedTask;
 }
-
-
-

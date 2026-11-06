@@ -1,0 +1,14 @@
+{
+  "date": "2026-11-06T17:30:30.478Z",
+  "url": "http://127.0.0.1:5080/IFP_Final/",
+  "passed": true,
+  "report": [
+    "Chromium 151.0.7922.34",
+    "Controls, errors, pause/resume, speed, emulated hidden-tab event, repeated menu transitions, 390x844 and 844x390 layouts passed",
+    "Complete legal browser victory: 12090 points, 151 kills; record persisted after reload",
+    "Complete defeat, record and fresh restart (normal storage) passed",
+    "Complete defeat, record and fresh restart (corrupt storage) passed",
+    "Complete defeat, record and fresh restart (blocked storage) passed",
+    "No browser console errors, failed requests or HTTP errors"
+  ]
+}

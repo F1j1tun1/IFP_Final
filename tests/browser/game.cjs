@@ -5,7 +5,7 @@ const { chromium, firefox } = require("playwright");
 const { serve } = require("./server.cjs");
 const url = process.env.GAME_URL || "http://127.0.0.1:5080/IFP_Final/";
 const key = "chrono-bastion.high-score.v1";
-const screenshots = path.resolve("docs/screenshots");
+const screenshots = path.resolve("artifacts/screenshots");
 const report = [];
 const failures = [];
 fs.mkdirSync(screenshots, { recursive: true });

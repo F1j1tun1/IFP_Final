@@ -49,7 +49,7 @@ jobs:
       - uses: actions/upload-artifact@v6
         if: always()
         with:
-          name: browser-evidence
+          name: browser-results
           path: |
             artifacts/browser-results.json
-            docs/screenshots
+            artifacts/screenshots

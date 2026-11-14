@@ -1,8 +1,10 @@
+using System.Collections.Immutable;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using ChronoBastion.Core.Content;
 using ChronoBastion.Core.Functional;
 using ChronoBastion.Core.Model;
+using ChronoBastion.Core.Rules;
 
 namespace ChronoBastion.Application;
 
@@ -10,9 +12,9 @@ public sealed record SavedRun([property: JsonRequired] int Version, [property: J
 
 public static class SavedRuns
 {
-    public const string StorageKey = "thornwatch.run.v1";
+    public const string StorageKey = "thornwatch.run.v2";
     public static string Serialize(GameState state) =>
-        JsonSerializer.Serialize(new SavedRun(1, state), SavedRunJsonContext.Default.SavedRun);
+        JsonSerializer.Serialize(new SavedRun(3, state), SavedRunJsonContext.Default.SavedRun);
 
     public static Result<GameState, string> Parse(string json)
     {
@@ -25,12 +27,23 @@ public static class SavedRuns
                 return Invalid();
             string[] required = ["StageNumber", "WaveNumber", "WavesCleared", "Gold", "CoreHealth", "Phase",
                 "Score", "Kills", "Escaped", "WaveTick", "NextEnemyId", "NextSpawnIndex", "SpeedMultiplier",
-                "IsPaused", "Towers", "Enemies", "Schedule"];
+                "IsPaused", "AutoWaves", "AutoWaveTicksRemaining", "Towers", "Enemies", "Schedule"];
             if (required.Any(name => !data.TryGetProperty(name, out _))) return Invalid();
+            if (data.GetProperty("Enemies").ValueKind != JsonValueKind.Array ||
+                data.GetProperty("Enemies").EnumerateArray().Any(enemy =>
+                    enemy.ValueKind != JsonValueKind.Object || !enemy.TryGetProperty("AbilityTicks", out _))) return Invalid();
             var saved = JsonSerializer.Deserialize(json, SavedRunJsonContext.Default.SavedRun);
-            return saved is { Version: 1, State: { } state } && Valid(state)
-                ? Result<GameState, string>.Ok(state)
-                : Invalid();
+            if (saved is not { Version: 2 or 3, State: { } state }) return Invalid();
+            double? previousLength = saved.Version == 2
+                ? state.StageNumber switch { 1 => 1650, 2 => 1700, 3 => 1730, _ => 0 }
+                : null;
+            if (!Valid(state, previousLength)) return Invalid();
+            if (previousLength is double length)
+                state = state with { Enemies = state.Enemies.Select(enemy => enemy with
+                {
+                    Distance = enemy.Distance / length * Campaign.Get(state.StageNumber).Map.Length
+                }).ToImmutableArray() };
+            return Result<GameState, string>.Ok(state);
         }
         catch (Exception error) when (error is JsonException or ArgumentException or InvalidOperationException or OverflowException)
         { return Invalid(); }
@@ -39,7 +52,7 @@ public static class SavedRuns
     private static Result<GameState, string> Invalid() =>
         Result<GameState, string>.Fail("This saved journey is damaged or from another version. Start a new journey.");
 
-    private static bool Valid(GameState s)
+    private static bool Valid(GameState s, double? previousLength = null)
     {
         if (!Enum.IsDefined(s.Phase) || s.IsFinished || s.StageNumber is < 1 or > 3 ||
             s.CoreHealth is < 1 or > GameRules.StartingHealth || s.Gold is < 0 or > 500000 ||
@@ -51,6 +64,9 @@ public static class SavedRuns
             return false;
         var start = (s.StageNumber - 1) * 12;
         var end = start + s.StageWaves;
+        if (s.AutoWaveTicksRemaining is < 0 or > GameRules.AutoWaveDelayTicks ||
+            (s.AutoWaveTicksRemaining > 0 && (!s.AutoWaves || s.Phase != GamePhase.Planning || s.WaveNumber <= start)) ||
+            (s.IsPaused && s.Phase != GamePhase.Combat && !s.HasCountdown)) return false;
         if (s.WaveNumber < start || s.WaveNumber > end) return false;
         if (s.Phase == GamePhase.Combat)
         {
@@ -75,15 +91,16 @@ public static class SavedRuns
                 tower.Level is < 1 or > 3) return false;
             var catalog = TowerCatalog.Get(tower.Kind);
             if (tower.InvestedGold != catalog.Levels.Take(tower.Level).Sum(l => l.Price) ||
-                tower.CooldownTicks < 0 || tower.CooldownTicks > 28) return false;
+                tower.CooldownTicks < 0 || tower.CooldownTicks > catalog.Levels.Max(level => level.FireIntervalTicks)) return false;
         }
         if (s.Enemies.Select(e => e.Id).Distinct().Count() != s.Enemies.Length) return false;
         foreach (var enemy in s.Enemies)
         {
             if (!Enum.IsDefined(enemy.Kind) || enemy.Id < 1 || enemy.Id >= s.NextEnemyId ||
+                enemy.AbilityTicks < 0 || enemy.AbilityTicks >= Math.Max(1, EnemyAbilities.Interval(enemy.Kind)) ||
                 !double.IsFinite(enemy.Health) || !double.IsFinite(enemy.MaxHealth) || !double.IsFinite(enemy.Distance) ||
                 enemy.Health <= 0 || enemy.Health > enemy.MaxHealth || enemy.Distance < 0 ||
-                enemy.Distance >= Campaign.Get(s.StageNumber).Map.Length || enemy.SlowTicks is < 0 or > 45 ||
+                enemy.Distance >= (previousLength ?? Campaign.Get(s.StageNumber).Map.Length) || enemy.SlowTicks is < 0 or > 45 ||
                 enemy.SlowMultiplier is not (1 or 0.4 or 0.5 or 0.6) ||
                 (enemy.SlowTicks == 0 && enemy.SlowMultiplier != 1) ||
                 Math.Abs(enemy.MaxHealth - EnemyCatalog.Get(enemy.Kind).Health * GameRules.HealthMultiplier(s.WaveNumber)) > 0.001)

@@ -1,0 +1,100 @@
+const assert = require("node:assert/strict");
+const runKey = "thornwatch.run.v2";
+const button = (p, name) => p.getByRole("button", { name, exact: typeof name === "string" });
+const snapshot = p => p.evaluate(key => JSON.parse(localStorage.getItem(key)).State, runKey);
+const hide = (p, value) => p.evaluate(hidden => {
+    Object.defineProperty(document, "hidden", { configurable: true, get: () => hidden });
+    document.dispatchEvent(new Event("visibilitychange"));
+}, value);
+
+module.exports = async function mechanics(browser, url, observe, report) {
+    const context = await browser.newContext({ viewport: { width: 1366, height: 768 } });
+    const p = await context.newPage();
+    observe(p);
+    await p.goto(url);
+    await button(p, "New journey →").click({ timeout: 60000 });
+    for (const [id, kind] of [[2, "Archer"], [5, "Catapult"]]) {
+        await p.locator(`.pad[aria-label^="Pad ${id}:"]`).click();
+        await button(p, new RegExp(`^${kind}`)).click();
+    }
+    await button(p, "Auto waves: Off").click();
+    await button(p, "Speed x1").click();
+    await button(p, /^Start wave 1 /).click();
+    await button(p, "Pause countdown").click({ timeout: 90000 });
+    const paused = await snapshot(p);
+    await p.waitForTimeout(1200);
+    assert.equal((await snapshot(p)).AutoWaveTicksRemaining, paused.AutoWaveTicksRemaining);
+    await button(p, "Resume countdown").click();
+    await p.waitForTimeout(1100);
+    await button(p, "Pause countdown").click();
+    const remaining = (await snapshot(p)).AutoWaveTicksRemaining;
+    assert.ok(paused.AutoWaveTicksRemaining - remaining >= 16 && paused.AutoWaveTicksRemaining - remaining <= 30,
+        "Countdown uses real seconds, even at combat speed x2");
+    await button(p, "Field manual").click();
+    await p.waitForTimeout(5500);
+    await button(p, "Close manual").click();
+    assert.equal((await snapshot(p)).AutoWaveTicksRemaining, 0);
+    await button(p, /^Start wave 2 /).waitFor();
+    await hide(p, true);
+    await p.waitForTimeout(150);
+    await hide(p, false);
+    assert.match(await p.locator(".announcement").innerText(), /Start wave/);
+    assert.equal(await button(p, "Resume").count(), 0);
+    await button(p, /^Start wave 2 /).click();
+    await button(p, "Pause countdown").waitFor({ timeout: 90000 });
+    await button(p, "Auto waves: On").click();
+    await p.waitForTimeout(5500);
+    await button(p, /^Start wave 3 /).waitFor();
+    await button(p, "Auto waves: Off").click();
+    await button(p, /^Start wave 3 /).click();
+    await button(p, "Pause countdown").waitFor({ timeout: 90000 });
+    await p.reload();
+    await button(p, "Continue journey →").click({ timeout: 60000 });
+    await p.waitForTimeout(5500);
+    await button(p, /^Start wave 4 /).waitFor();
+    assert.equal(await button(p, "Resume").count(), 0);
+    await button(p, /^Start wave 4 /).click();
+    await button(p, "Pause countdown").waitFor({ timeout: 90000 });
+    await button(p, "Pause").waitFor({ timeout: 15000 });
+    await button(p, "Pause").click();
+    assert.equal((await snapshot(p)).WaveNumber, 5);
+    await p.setViewportSize({ width: 768, height: 1024 });
+    await p.screenshot({ path: "artifacts/screenshots/tablet-mechanics.png", fullPage: true });
+    report.push("Auto waves: real-time countdown at x2, pause/resume, cancel, help, visibility, reload and one automatic start passed");
+    console.log(report.at(-1));
+
+    const other = await context.newPage();
+    observe(other);
+    await other.goto(url);
+    await other.getByText(/Journey storage is in use/).waitFor({ timeout: 60000 });
+    assert.equal(await other.getByRole("button", { name: "Preparing the realm…" }).isDisabled(), true);
+    const before = await p.evaluate(key => localStorage.getItem(key), runKey);
+    assert.equal(await other.evaluate(async () => {
+        const module = await import("./js/browser.js");
+        module.cacheRun("stale journey");
+        return module.flushRun();
+    }), "conflict");
+    assert.equal(await other.evaluate(key => localStorage.getItem(key), runKey), before);
+    await p.close();
+    await button(other, "Reload journey").click();
+    await button(other, "Continue journey →").click({ timeout: 60000 });
+    await button(other, "Resume").waitFor();
+
+    const writer = await context.newPage();
+    observe(writer);
+    await writer.goto(url);
+    await writer.getByText(/Journey storage is in use/).waitFor({ timeout: 60000 });
+    await writer.evaluate(key => localStorage.setItem(key, "ended"), runKey);
+    await other.getByText(/Journey storage is in use/).waitFor();
+    assert.equal(await other.evaluate(async () => (await import("./js/browser.js")).flushRun()), "conflict");
+    assert.equal(await writer.evaluate(key => localStorage.getItem(key), runKey), "ended");
+    await other.close();
+    await button(writer, "Reload journey").click();
+    await button(writer, "New journey →").waitFor({ timeout: 60000 });
+    assert.equal(await button(writer, "Continue journey →").count(), 0);
+    await button(writer, "New journey →").click();
+    assert.equal((await snapshot(writer)).WaveNumber, 0);
+    report.push("Two tabs: exclusive writer, blocked stale writes, ownership after closing/reloading and no resurrection of ended saves passed");
+    console.log(report.at(-1));
+    await context.close();
+};

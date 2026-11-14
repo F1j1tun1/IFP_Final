@@ -21,6 +21,15 @@ public static class GameEngine
             return Failure(GameErrorCode.GameFinished, "This run has ended. Start a new game.");
 
         if (command is GameCommand.NextStage) return NextStage(state);
+        if (command is GameCommand.Suspend)
+            return Success(state with { IsPaused = state.Phase == GamePhase.Combat, AutoWaveTicksRemaining = 0 });
+        if (command is GameCommand.SetAutoWaves auto)
+            return Success(state with
+            {
+                AutoWaves = auto.Enabled,
+                AutoWaveTicksRemaining = auto.Enabled ? state.AutoWaveTicksRemaining : 0,
+                IsPaused = state.Phase == GamePhase.Combat && state.IsPaused
+            });
         if (state.Phase == GamePhase.StageCleared)
             return Failure(GameErrorCode.InvalidPhase, "Travel to the next region first.");
 
@@ -31,9 +40,9 @@ public static class GameEngine
             GameCommand.SellTower sell => Sell(state, sell.PadId),
             GameCommand.SetTargetPriority target => SetPriority(state, target),
             GameCommand.StartWave => StartWave(state),
-            GameCommand.SetPaused pause => state.Phase == GamePhase.Combat
+            GameCommand.SetPaused pause => state.Phase == GamePhase.Combat || state.HasCountdown
                 ? Success(state with { IsPaused = pause.Paused })
-                : Failure(GameErrorCode.InvalidPhase, "Pause is available during a wave."),
+                : Failure(GameErrorCode.InvalidPhase, "Pause is available during combat or a countdown."),
             GameCommand.SetSpeed speed => speed.Multiplier is 1 or 2
                 ? Success(state with { SpeedMultiplier = speed.Multiplier })
                 : Failure(GameErrorCode.InvalidSpeed, "Choose speed 1 or 2."),
@@ -45,8 +54,8 @@ public static class GameEngine
     {
         if (state.Phase != GamePhase.StageCleared || state.StageNumber >= 3)
             return Failure(GameErrorCode.InvalidPhase, "Clear this region before travelling.");
-        var refund = state.Towers.Sum(GameRules.SellRefund);
-        const int bonus = 150;
+        var refund = state.Towers.Sum(GameRules.TravelRefund);
+        const int bonus = GameRules.RegionBonus;
         return Success(state with
         {
             StageNumber = state.StageNumber + 1,
@@ -64,7 +73,7 @@ public static class GameEngine
 
     private static Result<GameTransition, GameError> Build(GameState state, GameCommand.BuildTower build)
     {
-        if (!BastionMap.FindPad(build.PadId).IsSome)
+        if (!Campaign.Get(state.StageNumber).Map.Pads.Any(pad => pad.Id == build.PadId))
             return Failure(GameErrorCode.InvalidPad, "Choose a marked build pad.");
         if (!Enum.IsDefined(build.Kind))
             return Failure(GameErrorCode.InvalidTowerKind, "Choose an available tower type.");
@@ -146,6 +155,7 @@ public static class GameEngine
             NextSpawnIndex = 0,
             Schedule = WavePlanner.Schedule(number),
             IsPaused = false,
+            AutoWaveTicksRemaining = 0,
             Towers = state.Towers.Select(tower => tower with { CooldownTicks = 0 }).ToImmutableArray()
         }, new GameEvent.WaveStarted(number));
     }
@@ -153,8 +163,15 @@ public static class GameEngine
     public static GameTransition Tick(GameState state)
     {
         ArgumentNullException.ThrowIfNull(state);
-        if (state.Phase != GamePhase.Combat || state.IsPaused)
+        if (!state.CanAdvance)
             return GameTransition.Unchanged(state);
+        if (state.HasCountdown)
+        {
+            var waiting = state with { AutoWaveTicksRemaining = state.AutoWaveTicksRemaining - 1 };
+            return waiting.AutoWaveTicksRemaining == 0
+                ? StartWave(waiting).Match(transition => transition, _ => GameTransition.Unchanged(state))
+                : GameTransition.Unchanged(waiting);
+        }
 
         var enemies = state.Enemies.ToList();
         var events = ImmutableArray.CreateBuilder<GameEvent>();
@@ -170,6 +187,7 @@ public static class GameEngine
 
         var map = Campaign.Get(state.StageNumber).Map;
         var towers = FireTowers(state.Towers, enemies, events, map);
+        EnemyAbilities.Apply(enemies, events, map, state.WaveNumber, ref nextId);
         var gold = state.Gold;
         var score = state.Score;
         var kills = state.Kills;
@@ -234,6 +252,8 @@ public static class GameEngine
                 Score = next.Score + waveScore + (won ? GameRules.VictoryBonus + health * GameRules.HealthBonus : 0),
                 Schedule = [],
                 NextSpawnIndex = 0,
+                AutoWaveTicksRemaining = !won && next.WaveNumber is not (12 or 24) && next.AutoWaves
+                    ? GameRules.AutoWaveDelayTicks : 0,
                 IsPaused = false
             };
             events.Add(new GameEvent.WaveCleared(next.WaveNumber, waveGold, waveScore));

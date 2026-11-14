@@ -4,6 +4,7 @@ namespace ChronoBastion.Core.Model;
 
 public abstract record GameEvent
 {
+    public sealed record EnemyHealed(int EnemyId, double Amount) : GameEvent;
     public sealed record TowerBuilt(int PadId, TowerKind Kind) : GameEvent;
     public sealed record TowerUpgraded(int PadId, int Level) : GameEvent;
     public sealed record TowerSold(int PadId, int Refund) : GameEvent;

@@ -72,7 +72,7 @@ public sealed class CombatTests
         state = TestGame.Apply(state, new GameCommand.BuildTower(1, TowerKind.Pulse));
         state = TestGame.Apply(state, new GameCommand.BuildTower(2, TowerKind.Pulse));
         var result = GameEngine.Tick(state);
-        Assert.Equal(state.Gold + 12, result.State.Gold);
+        Assert.Equal(state.Gold + 4, result.State.Gold);
         Assert.Equal(20, result.State.Score);
         Assert.Equal(1, result.State.Kills);
         Assert.Empty(result.State.Enemies);
@@ -117,7 +117,7 @@ public sealed class CombatTests
         var result = GameEngine.Tick(state);
         Assert.Equal(GamePhase.Planning, result.State.Phase);
         Assert.Equal(3, result.State.WavesCleared);
-        Assert.Equal(345, result.State.Gold);
+        Assert.Equal(313, result.State.Gold);
         Assert.Equal(300, result.State.Score);
         Assert.Equal(result.State, GameEngine.Tick(result.State).State);
         Assert.Empty(GameEngine.Tick(result.State).Events);

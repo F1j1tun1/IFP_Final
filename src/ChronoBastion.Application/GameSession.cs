@@ -19,7 +19,7 @@ public sealed class GameSession
         var result = GameEngine.Execute(State, command);
         if (result is Result<GameTransition, GameError>.Success success)
         {
-            if (command is GameCommand.NextStage or GameCommand.Restart or GameCommand.StartWave or GameCommand.SetPaused or GameCommand.SetSpeed)
+            if (command is GameCommand.NextStage or GameCommand.Restart or GameCommand.StartWave or GameCommand.SetPaused or GameCommand.SetSpeed or GameCommand.SetAutoWaves or GameCommand.Suspend)
                 accumulatedTime = 0;
             State = success.Value.State;
             Updated?.Invoke(success.Value);
@@ -32,7 +32,7 @@ public sealed class GameSession
         return SavedRuns.Parse(json).Map(state =>
         {
             accumulatedTime = 0;
-            State = state with { IsPaused = state.Phase == GamePhase.Combat };
+            State = state with { IsPaused = state.Phase == GamePhase.Combat, AutoWaveTicksRemaining = 0 };
             var transition = GameTransition.Unchanged(State);
             Updated?.Invoke(transition);
             return transition;
@@ -43,17 +43,18 @@ public sealed class GameSession
     {
         if (elapsed < TimeSpan.Zero)
             throw new ArgumentOutOfRangeException(nameof(elapsed));
-        if (State.Phase != GamePhase.Combat || State.IsPaused)
+        if (!State.CanAdvance)
         {
             accumulatedTime = 0;
             return;
         }
 
         // Drop long background-tab gaps instead of simulating an unseen battle.
-        accumulatedTime += Math.Min(elapsed.Ticks, MaxElapsed) * State.SpeedMultiplier;
+        var phase = State.Phase;
+        accumulatedTime += Math.Min(elapsed.Ticks, MaxElapsed) * (phase == GamePhase.Combat ? State.SpeedMultiplier : 1);
         var events = ImmutableArray.CreateBuilder<GameEvent>();
         var advanced = false;
-        while (accumulatedTime >= TickDuration && State.Phase == GamePhase.Combat)
+        while (accumulatedTime >= TickDuration && State.CanAdvance && State.Phase == phase)
         {
             var transition = GameEngine.Tick(State);
             State = transition.State;
@@ -61,7 +62,7 @@ public sealed class GameSession
             accumulatedTime -= TickDuration;
             advanced = true;
         }
-        if (State.Phase != GamePhase.Combat)
+        if (!State.CanAdvance || State.Phase != phase)
             accumulatedTime = 0;
         if (advanced)
             Updated?.Invoke(new(State, events.ToImmutable()));

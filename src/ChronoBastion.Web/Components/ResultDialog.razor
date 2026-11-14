@@ -2,7 +2,7 @@
     <p class="eyebrow">RUN COMPLETE</p><h2 id="result-title">@(State.Phase == GamePhase.Won ? "Victory" : "Defeat")</h2>
     <p>@(State.Phase == GamePhase.Won ? "The War Chief has fallen. All three regions are safe." : "The gate has fallen. This journey is over. Your next attempt begins in the forest.")</p>
     <div class="result-score">@State.Score.ToString("N0", System.Globalization.CultureInfo.InvariantCulture) <small>POINTS</small></div>
-    <dl class="stats"><div><dt>Waves cleared</dt><dd>@State.WavesCleared / @GameRules.TotalWaves</dd></div><div><dt>Enemies destroyed</dt><dd>@State.Kills</dd></div><div><dt>Gate health</dt><dd>@State.CoreHealth</dd></div></dl>
+    <dl class="stats"><div><dt>Waves cleared</dt><dd>@State.WavesCleared / @GameRules.TotalWaves</dd></div><div><dt>Enemies destroyed</dt><dd>@State.Kills</dd></div><div><dt>Gate health</dt><dd class="health-value"><HealthIcon />@State.CoreHealth</dd></div></dl>
     <p>Local record: <strong>@RecordLabel</strong></p>
     <button class="primary wide" @onclick="OnPlayAgain">Play again</button><button class="wide" @onclick="OnMenu">Main menu</button>
 </section></div>

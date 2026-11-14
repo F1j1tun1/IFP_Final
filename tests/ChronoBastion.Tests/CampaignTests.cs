@@ -48,7 +48,7 @@ public sealed class CampaignTests
         Assert.Equal(0, next.WaveInStage);
         Assert.Equal(9, next.CoreHealth);
         Assert.Equal(completed.Score, next.Score);
-        Assert.Equal(completed.Gold + 63 + 150, next.Gold);
+        Assert.Equal(completed.Gold + 90 + 75, next.Gold);
         Assert.Empty(next.Towers);
         Assert.False(GameEngine.Execute(next, new GameCommand.NextStage()).IsSuccess);
         Assert.True(SavedRuns.Parse(SavedRuns.Serialize(completed)).IsSuccess);

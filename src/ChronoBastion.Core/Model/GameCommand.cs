@@ -9,6 +9,8 @@ public abstract record GameCommand
     public sealed record NextStage : GameCommand;
     public sealed record StartWave : GameCommand;
     public sealed record SetPaused(bool Paused) : GameCommand;
+    public sealed record SetAutoWaves(bool Enabled) : GameCommand;
+    public sealed record Suspend : GameCommand;
     public sealed record SetSpeed(int Multiplier) : GameCommand;
     public sealed record Restart : GameCommand;
 }

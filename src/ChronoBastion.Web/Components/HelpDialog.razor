@@ -1,15 +1,16 @@
 <div class="modal-backdrop"><section class="dialog help" role="dialog" aria-modal="true" aria-labelledby="help-title" tabindex="-1" data-dialog>
     <p class="eyebrow">FIELD MANUAL</p><h2 id="help-title">Hold the line</h2>
-    <p>Tap a numbered pad, then choose a tower. Earn gold by destroying enemies and clearing waves. Upgrade to level three, change target priority, or sell for 70% of your investment.</p>
-    <p>Clear the forest (12 waves), the ruined village (12), and the keep (15). Your gold and remaining gate health carry over. Travelling refunds 70% of tower investment and awards 150 gold; build new towers on the next map. If the gate falls, the whole journey ends.</p>
-    <p>Your current journey saves automatically on this browser and resumes paused. Returning to the menu keeps it. A defeat or a confirmed new journey erases that attempt; your best finished-run record remains.</p><h3>Your arsenal</h3>
+    <p>Tap a numbered pad, then choose a tower. Earn gold by destroying enemies and clearing waves. Upgrade to level three, change target priority, or sell for 50% of your investment.</p>
+    <p>Clear the forest (12 waves), the ruined village (12), and the keep (15). Your gold and remaining gate health carry over. Travelling refunds all tower investment and awards 75 gold; build new towers on the next map. If the gate falls, the whole journey ends.</p>
+    <p>When browser storage is available, your journey saves automatically. Use one game tab. Continue journey restores your attempt: choose Resume during combat or Start wave between waves. Defeat or a confirmed new journey erases that attempt; your best finished-run record remains.</p><h3>Your arsenal</h3>
     @foreach (var tower in TowerCatalog.All)
     { <p><strong class="@tower.Kind.ToString().ToLowerInvariant()">@tower.Name · @tower.AtLevel(1).Price gold</strong><br />@tower.Description</p> }
     <h3>Know the enemy</h3>
     @foreach (var enemy in EnemyCatalog.All)
     { <p class="enemy-entry"><UnitSprite Enemy="enemy.Kind" Size="60" /><strong>@enemy.Name</strong> · @enemy.Health base health · @enemy.Armor.ToString("P0") armor<br />@GameQueries.Describe(EnemyCatalog.Spawn(enemy.Kind, 1, 1))</p> }
     <p><strong>Targeting:</strong> First follows the enemy closest to the core. Strongest chooses the most health. Nearest chooses the closest enemy in range.</p>
-    <p>Pause to plan. Speed ×2 advances combat twice as fast. Opening this manual or hiding the tab pauses combat; choose Resume when you return.</p>
+    <p>Pause to plan. Speed ×2 advances combat twice as fast. Auto waves is off by default. When enabled, clearing a wave starts a five-second countdown. Pause freezes it; switching Auto waves off cancels it. Speed does not shorten the countdown.</p>
+    <p>Opening this manual, going to the menu, hiding the tab or loading a save stops automatic starts. Return with Resume during combat or Start wave between waves. Travel to each new region manually.</p>
     <button class="primary wide" @onclick="OnClose">Close manual</button>
 </section></div>
 @code { [Parameter] public EventCallback OnClose { get; set; } }

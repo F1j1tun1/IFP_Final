@@ -1,88 +1,103 @@
 # Thornwatch team handoff
 
-Agreed division, 14 November 2026. This is the ongoing project revision, not a
-third planned development stage. Keep the pull request in draft until both parts
-are reviewed together. Do not publish the incomplete ability implementation.
+Integration branch: `feat/thornwatch`, draft PR #2. Mechanics branch:
+`feat/campaign-mechanics`. Keep the integration in draft until the combined game
+and the integrated visual revision have been reviewed.
 
-## Ainabek Chingiskhan / Chingiskhan07
+## Ownership
 
-Owns the interface and graphics: the approved cartoon sprites, three map views,
-menus, HUD, tower controls, help/results, responsive touch/keyboard interaction,
-sound feedback, browser persistence and browser/component tests.
+- **Ainabek Chingiskhan / Chingiskhan07:** cartoon sprites, maps, menu, HUD,
+  tower controls, responsive interaction and the campaign integration foundation.
+- **Yerkingali Saruar / F1j1tun1:** enemy abilities, economy, automatic waves,
+  save consistency and their engine/browser tests, followed by the approved map
+  and interface revision. The tower and enemy sprite atlases are unchanged.
 
-The branch also includes the integration foundation needed to exercise that UI:
-three map definitions, 12/12/15 wave schedules, fourteen enemy catalog entries,
-region transitions with resource carryover, and a validated save codec. These are
-already implemented; they are not unfinished tasks assigned to the teammate.
+Three illustrated maps now have curved roads and aligned build sites. Region
+colours carry through the menu and dialogs; a new journey returns to the forest.
+Gate health is red in the HUD and above the gate. Currency amounts use coin icons.
+Save version 3 migrates version 2 enemies by their fraction of the road travelled;
+tower pad IDs, upgrades, resources and ability timers are retained.
 
-## Yerkingali Saruar / F1j1tun1
+## Implemented mechanics
 
-Owns the enemy and boss abilities in the C# engine, their balance and domain tests.
-The prototype abilities were deliberately removed from the active branch after
-this division was agreed. No claim is made that they are implemented here.
+The War Chief summons three ordinary goblins every six combat seconds, behind its
+current position on the active map. They receive unique IDs, normal wave-scaled
+health and ordinary rewards. Summoning is capped at 120 living enemies. The final
+wave continues until all enemies, including summons, are killed or escape.
 
-Implement these agreed mechanics:
+Every four combat seconds, a shaman restores 12% of maximum health to up to three
+wounded allies within 110 world units. The most injured health fraction goes
+first, with enemy ID breaking ties. A shaman cannot heal itself, dead units or the
+War Chief. Healing cannot exceed maximum health. Other shamans are valid allies.
 
-1. **War Chief:** summon three goblins periodically (starting proposal: once every
-   six battle seconds). Spawn them near or behind the boss on the existing path,
-   with unique IDs from NextEnemyId. Give each ordinary catalog health/rewards.
-   Keep the total number of living enemies bounded. No spawning after boss death.
-2. **Orc shaman:** periodically heal nearby living allies (starting proposal:
-   restore 4% of max health within 100 world units every three battle seconds).
-   Cap health at MaxHealth. Do not resurrect dead enemies or heal the War Chief.
-3. Tune the ability intervals, enemy health, wave composition and rewards using
-   complete legal simulations. All 39 waves must remain winnable without injected
-   gold, health or game-state shortcuts.
+Tick order: scheduled spawns, tower attacks, surviving casters' abilities,
+movement/death rewards, defeat, then wave completion. A caster killed by a tower
+cannot act that tick. All time is measured in simulation ticks and the incoming
+immutable state is preserved. Saved runs store and validate ability timers.
 
-These numerical proposals are starting points for your implementation and
-balancing, not a requirement to reproduce an earlier prototype verbatim. Do not
-add unagreed mechanics such as extra maps, multiplayer or retry-wave checkpoints.
+Auto waves defaults to Off. If enabled when a wave ends, the existing clock runs
+a five-second countdown. Pause freezes it; x2 affects combat only. Disabling the
+option cancels the countdown. The menu, manual, hidden tab and save restoration
+cancel pending automatic starts. Combat returns paused; planning requires Start
+wave. New regions and new journeys always start manually. There is no wave retry.
 
-## Integration points
+## Economy
 
-- `src/ChronoBastion.Core/GameEngine.cs`: Tick is the pure simulation boundary.
-  Insert ability processing in a deliberate order around spawning/combat/movement;
-  explain that order with focused tests. Return new state and events.
-- `src/ChronoBastion.Core/Content/EnemyCatalog.cs` and `WavePlanner.cs`: definitions,
-  balance and recursive wave composition. Use Campaign.Get(state.StageNumber).Map
-  for positions, ranges and path length; never assume the first map.
-- `GameEvent.Summoned(Position)` already exists. The interface consumes it for
-  the boss announcement and sound; emit it once per summon burst.
-- `src/ChronoBastion.Application/SavedRun.cs`: snapshots include the current state.
-  If you add cooldown/ability fields, serialize and validate them and add a reload
-  equivalence test. Use simulation ticks, not wall-clock time, Random, JavaScript
-  timers or another GameSession. Reload must not reset a boss ability for an exploit.
-- `GameQueries.Describe`: update English enemy descriptions when abilities work.
-  Preserve the UI parameters, dispatch commands and existing event contracts.
+| Rule | Previous draft | Current |
+| --- | --- | --- |
+| Starting gold / health | 300 / 20 | 300 / 20 |
+| Archer build / upgrades | 90 / 75 / 120 | 90 / 110 / 180 |
+| Catapult build / upgrades | 140 / 110 / 160 | 140 / 160 / 260 |
+| Frost mage build / upgrades | 100 / 80 / 130 | 100 / 120 / 190 |
+| Wave reward | 30 + 5 × global wave | 10 + wave within region |
+| Voluntary sale | 70% | 50% |
+| Travel refund | 70% | 100% |
+| Region bonus | 150 | 75 |
+| Health growth per global wave | 10% of base | 12% of base |
+| War Chief base health | 1100 | 900 |
 
-## Acceptance checks for the engine work
+Kill gold is lower: goblin 4, runner/wolf 3, spider 2, orc/wraith 6,
+armored orc 7, shaman/armored skeleton 8, ent 10, skeleton 4, zombie 5,
+troll 15 and War Chief 80. Scores and tower attack stats are unchanged.
+More expensive upgrades compete with extra coverage. Full travel refunds let the
+player rebuild for a new map without losing a fraction of the entire army twice.
 
-- A boss summons at the intended interval; spawned IDs are unique and rewards
-  are paid once. Summons cannot appear beyond the gate or after the run ends.
-- Pause freezes ability timers. Speed x2 changes elapsed progression, not damage
-  per tick. Saving/reloading continues deterministically and resumes paused.
-- Shaman healing obeys range, maximum health, death and boss exclusions.
-- Enemy positions, splash hits and ability ranges use each region's actual map.
-- Victory requires the boss and all surviving summons to be resolved. Defeat
-  takes priority and still deletes the active saved attempt through GameEnded.
-- Existing tests remain green; add focused tests demonstrating your new behavior.
-- Run Test.ps1, Publish-Pages.ps1 and Test-Browser.ps1; inspect the final boss fight.
+Legal deterministic simulations give these results with the current numbers:
 
-## Working together
+| Strategy | Result | Gate health | Gold left |
+| --- | --- | ---: | ---: |
+| Mixed defence | Win, wave 39 | 20 | 1592 |
+| Catapult-heavy | Win, wave 39 | 20 | 698 |
+| Archers only | Lose, wave 39 | 0 | 1999 |
+| Least road coverage first | Lose, wave 39 | 0 | 1463 |
+| Three initial towers, no upgrades | Lose, wave 13 | 0 | 1097 |
+| No defence | Lose, wave 3 | 0 | 323 |
 
-The integration draft is PR #2, branch `feat/thornwatch`. Fetch it and create your
-own branch from it so you receive the new graphics and contracts:
+These are fixed policies, not proof of an optimal or universally difficult game.
+The opening deliberately remains forgiving; human playtesting is still needed.
+Run the simulator's `balance` mode for per-wave resource and tower-level data.
 
-```powershell
-git fetch origin
-git switch -c feat/enemy-abilities origin/feat/thornwatch
-```
+## Save ownership
 
-Commit your actual changes under your own Git identity with short neutral titles,
-for example `Add boss reinforcements` or `Balance enemy abilities`. Open your PR
-against `feat/thornwatch` for integration review. Do not force-push main or replace
-another person's work. After integration, run the complete checks again before
-merging PR #2 into main.
+One tab holds a Web Lock for `thornwatch.run.v2`. Other tabs cannot start a game or
+write that attempt. Close the owning tab and reload to transfer control. A storage
+change from another writer stops the current tab before its cached state can be
+saved again. An ended marker cannot be overwritten by a stale participating tab.
+Unsupported/unavailable storage is reported and allows play without saving.
 
-Publication also requires the owner to set Settings > Pages > Build and deployment
-> Source to GitHub Actions, then run Deploy Pages from the final tested main commit.
+Version 1 attempts are not migrated because prices and combat rules changed.
+The existing best-record key is retained. Saves are local, not tamper-proof, and
+crashes can lose up to the two-second autosave interval. There is no cloud sync.
+
+## Verification and integration
+
+Run `scripts/Test.ps1`, `scripts/Publish-Pages.ps1` and `scripts/Test-Browser.ps1`.
+The browser suite uses the published `/IFP_Final/` build, ordinary player controls,
+all 39 waves, loss/restart, countdown interruptions, two-tab conflicts and storage
+failure. Reports and screenshots stay in ignored `artifacts/`; viewport emulation
+does not constitute testing on a physical phone. Inspect the boss fight as well.
+
+Open the mechanics PR against `feat/thornwatch`; do not force-push or merge main.
+After integrating both contributors' work and the visual revision, run the full
+checks again. Publishing requires Pages to use GitHub Actions and the Deploy Pages
+workflow to run from the final tested main commit.

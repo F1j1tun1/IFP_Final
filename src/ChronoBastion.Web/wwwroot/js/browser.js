@@ -1,8 +1,7 @@
 export function watchVisibility(reference) {
     const changed = () => {
         if (document.hidden) flushRun();
-        if (document.hidden)
-            reference.invokeMethodAsync("OnHidden").catch(() => {});
+        reference.invokeMethodAsync("OnVisibilityChanged", document.hidden).catch(() => {});
     };
     document.addEventListener("visibilitychange", changed);
     window.addEventListener("pagehide", flushRun);
@@ -71,24 +70,83 @@ export function watchDialogs() {
     };
 }
 
-const runKey = "thornwatch.run.v1";
+const runKey = "thornwatch.run.v2";
 let latestRun = null;
 let savedRun = null;
-let storageOk = true;
+let storageStatus = "unavailable";
+let releaseLock = null;
+let storageListener = null;
+let saveReference = null;
+
+function conflict() {
+    if (storageStatus === "conflict") return;
+    storageStatus = "conflict";
+    saveReference?.invokeMethodAsync("OnStorageConflict").catch(() => {});
+}
+
+export async function claimRun(reference) {
+    saveReference = reference;
+    if (!navigator.locks) return "unavailable";
+    return new Promise(resolve => {
+        navigator.locks.request(runKey, { ifAvailable: true }, async lock => {
+            if (!lock) {
+                storageStatus = "conflict";
+                resolve(storageStatus);
+                return;
+            }
+            try {
+                savedRun = localStorage.getItem(runKey);
+                storageStatus = "ready";
+            } catch {
+                resolve("unavailable");
+                return;
+            }
+            storageListener = event => {
+                if (event.key !== runKey && event.key !== null) return;
+                try {
+                    if (localStorage.getItem(runKey) !== savedRun) conflict();
+                } catch {
+                    storageStatus = "unavailable";
+                }
+            };
+            window.addEventListener("storage", storageListener);
+            const held = new Promise(release => { releaseLock = release; });
+            resolve(storageStatus);
+            await held;
+        }).catch(() => resolve("unavailable"));
+    });
+}
+
+export function releaseRun() {
+    if (storageListener) window.removeEventListener("storage", storageListener);
+    storageListener = null;
+    storageStatus = "unavailable";
+    releaseLock?.();
+    releaseLock = null;
+    saveReference = null;
+}
+
+export function reload() { window.location.reload(); }
+
 export function cacheRun(json) {
     latestRun = json;
 }
 export function flushRun() {
-    if (latestRun === null || (storageOk && latestRun === savedRun))
-        return storageOk;
+    if (storageStatus === "conflict" || storageStatus === "unavailable") return storageStatus;
     try {
-        localStorage.setItem(runKey, latestRun);
-        savedRun = latestRun;
-        storageOk = true;
+        if (localStorage.getItem(runKey) !== savedRun) {
+            conflict();
+            return "conflict";
+        }
+        if (latestRun === null) return "idle";
+        if (latestRun !== savedRun) {
+            localStorage.setItem(runKey, latestRun);
+            savedRun = latestRun;
+        }
+        return "saved";
     } catch {
-        storageOk = false;
+        return "unavailable";
     }
-    return storageOk;
 }
 let audio = null;
 let enabled = false;
@@ -136,4 +194,15 @@ export async function disposeAudio() {
     enabled = false;
     if (audio) await audio.close();
     audio = null;
+}
+
+export function readRegion() {
+    try {
+        const stage = Number(localStorage.getItem("thornwatch.region"));
+        return stage >= 1 && stage <= 3 && Number.isInteger(stage) ? stage : 1;
+    } catch { return 1; }
+}
+
+export function rememberRegion(stage) {
+    try { localStorage.setItem("thornwatch.region", String(stage)); } catch {}
 }

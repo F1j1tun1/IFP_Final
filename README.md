@@ -6,6 +6,9 @@ Defend the Whispering Wood, Ashfall Village and the Ironthorn Keep through
 
 Yerkingali Saruar and Ainabek Chingiskhan, IT-2502.
 
+The current integration is a draft. See [team handoff](TEAM_HANDOFF.md) for the
+agreed interface/engine ownership and the remaining ability work.
+
 ## Run
 
 Install the .NET 10 SDK, then run from the project folder:
@@ -36,8 +39,8 @@ The same commands work on Windows, Linux and macOS.
 On phones, tap the board or the large numbered buttons below it. On keyboards,
 Tab moves focus and Enter/Space selects a clearing. The field manual explains
 all fourteen enemies. Wolves and runners are fast; armored enemies resist damage;
-shamans heal nearby living infantry; the War Chief summons three goblins every
-six battle seconds. The War Chief cannot be healed by shamans. All enemies,
+the War Chief is the final siege enemy. Special abilities are assigned to the
+engine teammate in TEAM_HANDOFF.md and are not yet enabled in this draft. All enemies,
 including wraiths, follow the road and can be hit by all tower types.
 
 **Sound on/off** enables original synthesized bow, stone, ice and event cues.

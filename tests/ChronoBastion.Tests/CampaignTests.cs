@@ -72,46 +72,6 @@ public sealed class CampaignTests
     }
 
     [Fact]
-    public void Boss_summons_on_simulation_ticks_with_unique_ids_and_pause_freezes_it()
-    {
-        var state = new GameState
-        {
-            StageNumber = 3,
-            WaveNumber = 39,
-            Phase = GamePhase.Combat,
-            WaveTick = 120,
-            NextEnemyId = 2,
-            Enemies = [EnemyCatalog.Spawn(EnemyKind.Boss, 1, 39) with { Distance = 250 }]
-        };
-        Assert.Empty(GameEngine.Tick(state with { IsPaused = true }).Events);
-        var next = GameEngine.Tick(state);
-        Assert.Equal(4, next.State.Enemies.Length);
-        Assert.Equal(4, next.State.Enemies.Select(e => e.Id).Distinct().Count());
-        Assert.Single(next.Events.OfType<GameEvent.Summoned>());
-        Assert.Empty(GameEngine.Tick(next.State).Events.OfType<GameEvent.Summoned>());
-    }
-
-    [Fact]
-    public void Shaman_heals_nearby_living_infantry_but_not_boss_or_dead_units()
-    {
-        var ally = EnemyCatalog.Spawn(EnemyKind.Orc, 2, 25) with { Health = 10, Distance = 120 };
-        var boss = EnemyCatalog.Spawn(EnemyKind.Boss, 3, 25) with { Health = 10, Distance = 120 };
-        var dead = ally with { Id = 4, Health = 0 };
-        var state = new GameState
-        {
-            StageNumber = 3,
-            WaveNumber = 25,
-            Phase = GamePhase.Combat,
-            WaveTick = 60,
-            Enemies = [EnemyCatalog.Spawn(EnemyKind.Shaman, 1, 25) with { Distance = 100 }, ally, boss, dead]
-        };
-        var next = GameEngine.Tick(state).State;
-        Assert.True(next.Enemies.Single(e => e.Id == 2).Health > 10);
-        Assert.Equal(10, next.Enemies.Single(e => e.Id == 3).Health);
-        Assert.DoesNotContain(next.Enemies, e => e.Id == 4);
-    }
-
-    [Fact]
     public void Full_campaign_can_be_won_with_ordinary_resources_and_restart_is_fresh()
     {
         var run = DemoScenarios.Run(true);

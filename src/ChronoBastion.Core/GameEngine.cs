@@ -169,7 +169,6 @@ public static class GameEngine
         }
 
         var map = Campaign.Get(state.StageNumber).Map;
-        ApplyAbilities(state, enemies, events, ref nextId);
         var towers = FireTowers(state.Towers, enemies, events, map);
         var gold = state.Gold;
         var score = state.Score;
@@ -243,38 +242,6 @@ public static class GameEngine
         }
 
         return new(next, events.ToImmutable());
-    }
-
-    private static void ApplyAbilities(GameState state, List<Enemy> enemies, ImmutableArray<GameEvent>.Builder events, ref int nextId)
-    {
-        if (state.WaveTick == 0) return;
-        var map = Campaign.Get(state.StageNumber).Map;
-        // Abilities use simulation ticks, so pausing, speed and reload stay deterministic.
-        foreach (var source in enemies.Where(e => e.Health > 0).ToArray())
-        {
-            if (source.Kind == EnemyKind.Boss && state.WaveTick % 120 == 0 && enemies.Count < 150)
-            {
-                for (var i = 0; i < 3; i++)
-                {
-                    var goblin = EnemyCatalog.Spawn(EnemyKind.Grunt, nextId++, state.WaveNumber)
-                        with
-                    { Distance = Math.Max(0, source.Distance - 20 * (i + 1)) };
-                    enemies.Add(goblin);
-                    events.Add(new GameEvent.EnemySpawned(goblin.Id, goblin.Kind));
-                }
-                events.Add(new GameEvent.Summoned(map.PositionAt(source.Distance)));
-            }
-            if (source.Kind == EnemyKind.Shaman && state.WaveTick % 60 == 0)
-            {
-                var origin = map.PositionAt(source.Distance);
-                for (var i = 0; i < enemies.Count; i++)
-                {
-                    var ally = enemies[i];
-                    if (ally.Health > 0 && ally.Kind != EnemyKind.Boss && origin.DistanceSquaredTo(map.PositionAt(ally.Distance)) <= 10000)
-                        enemies[i] = ally with { Health = Math.Min(ally.MaxHealth, ally.Health + ally.MaxHealth * 0.04) };
-                }
-            }
-        }
     }
 
     private static ImmutableArray<Tower> FireTowers(

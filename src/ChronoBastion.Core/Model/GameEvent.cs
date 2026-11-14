@@ -14,6 +14,8 @@ public abstract record GameEvent
     public sealed record WaveStarted(int Number) : GameEvent;
     public sealed record WaveCleared(int Number, int Gold, int Points) : GameEvent;
     public sealed record GameEnded(bool Won, int Score) : GameEvent;
+    public sealed record StageEntered(int Number, int Refund, int Bonus) : GameEvent;
+    public sealed record Summoned(Position Position) : GameEvent;
     public sealed record GameRestarted : GameEvent;
 }
 

@@ -13,7 +13,7 @@ public sealed record HighScore(
 
 public static class HighScores
 {
-    public const string StorageKey = "chrono-bastion.high-score.v1";
+    public const string StorageKey = "thornwatch.high-score.v1";
 
     public static Option<HighScore> FromFinishedGame(GameState state) => state.IsFinished
         ? Option<HighScore>.Some(new(1, state.Score, state.WavesCleared, state.Phase == GamePhase.Won))

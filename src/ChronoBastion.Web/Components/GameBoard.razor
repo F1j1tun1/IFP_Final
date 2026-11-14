@@ -1,29 +1,19 @@
 <div class="battlefield">
     <svg class="board" viewBox="0 0 @BastionMap.Width @BastionMap.Height" aria-label="Battlefield with ten build pads">
-        <defs>
-            <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="#233648" stroke-width="1" /></pattern>
-            <radialGradient id="core-glow"><stop stop-color="#9fffe8"/><stop offset="1" stop-color="#1b897d" stop-opacity="0"/></radialGradient>
-        </defs>
-        <rect width="960" height="540" fill="#101e2c" />
-        <rect width="960" height="540" fill="url(#grid)" />
-        <polyline points="@PathPoints" fill="none" stroke="#070e19" stroke-width="66" stroke-linejoin="round" />
-        <polyline points="@PathPoints" fill="none" stroke="#405162" stroke-width="52" stroke-linejoin="round" />
-        <polyline points="@PathPoints" fill="none" stroke="#263646" stroke-width="46" stroke-linejoin="round" />
-        <polyline points="@PathPoints" fill="none" stroke="#779298" stroke-opacity=".35" stroke-width="2" stroke-dasharray="8 12" />
-        <text x="22" y="85" class="map-label">BREACH →</text>
-        <text x="24" y="505" class="map-label">BASTION 01 / OUTER PERIMETER</text>
-        <circle cx="935" cy="420" r="65" fill="url(#core-glow)" />
-        <path d="M 935 390 L 958 405 L 958 435 L 935 450 L 912 435 L 912 405 Z" fill="#123e41" stroke="#80f7df" stroke-width="3" />
-        <path d="M 935 401 L 946 420 L 935 439 L 924 420 Z" fill="#b4ffee" />
+        <MapScenery Stage="State.StageNumber" />
+        <polyline points="@PathPoints" fill="none" stroke="#26352c" stroke-width="65" stroke-linejoin="round" />
+        <polyline points="@PathPoints" fill="none" stroke="@(State.StageNumber == 1 ? "#b69a60" : State.StageNumber == 2 ? "#9d9381" : "#8b7b6e")" stroke-width="56" stroke-linejoin="round" />
+        <polyline points="@PathPoints" fill="none" stroke="#e2cd9c" stroke-opacity=".35" stroke-width="2" stroke-dasharray="6 17" />
+        <g transform="translate(914 @N(Map.Path[^1].Y-40))" class="gate"><path d="M0 80V8H12V0H24V8H36V0H48V80Z" fill="#d5c9a2" stroke="#28382f" stroke-width="4"/><path d="M12 80V45Q24 25 36 45V80" fill="#455749"/><path d="M8 14H40" stroke="#f4dc89" stroke-width="5"/></g>
         @if (SelectedPad is int selected && State.Towers.FirstOrDefault(t => t.PadId == selected) is { } selectedTower)
         {
-            var p = BastionMap.Pads.First(p => p.Id == selected).Position;
+            var p = Map.Pads.First(p => p.Id == selected).Position;
             <circle cx="@N(p.X)" cy="@N(p.Y)" r="@N(TowerCatalog.Get(selectedTower.Kind).AtLevel(selectedTower.Level).Range)" class="range" />
         }
-        @foreach (var pad in BastionMap.Pads)
+        @foreach (var pad in Map.Pads)
         {
             var tower = State.Towers.FirstOrDefault(t => t.PadId == pad.Id);
-            <g @key="pad.Id" transform="translate(@N(pad.Position.X) @N(pad.Position.Y))" class="pad @(SelectedPad == pad.Id ? "selected" : "") @(tower?.Kind.ToString().ToLowerInvariant())" role="button" tabindex="0" aria-label="Pad @pad.Id: @(tower is null ? "empty" : $"{tower.Kind} level {tower.Level}")" aria-pressed="@(SelectedPad == pad.Id)" @onclick="() => OnSelect.InvokeAsync(pad.Id)" @onkeydown="e => SelectKey(e, pad.Id)">
+            <g @key="pad.Id" transform="translate(@N(pad.Position.X) @N(pad.Position.Y))" class="pad @(SelectedPad == pad.Id ? "selected" : "") @(tower?.Kind.ToString().ToLowerInvariant())" role="button" tabindex="0" aria-label="Pad @pad.Id: @(tower is null ? "empty" : $"{TowerCatalog.Get(tower.Kind).Name} level {tower.Level}")" aria-pressed="@(SelectedPad == pad.Id)" @onclick="() => OnSelect.InvokeAsync(pad.Id)" @onkeydown="e => SelectKey(e, pad.Id)">
                 <circle r="54" fill="transparent" class="hit-area" />
                 <circle r="29" class="socket" />
                 <circle r="23" class="socket-inner" />
@@ -31,34 +21,18 @@
                 { <g><text y="6" text-anchor="middle" class="pad-number">@pad.Id</text></g> }
                 else
                 {
-                    @switch (tower.Kind)
-                    {
-                        case TowerKind.Pulse:
-                            <path d="M -14 11 L 0 -19 L 14 11 L 0 4 Z" class="tower-shape" />
-                            break;
-                        case TowerKind.Mortar:
-                            <rect x="-13" y="-13" width="26" height="26" rx="5" class="tower-shape" /><circle r="7" fill="#142333" />
-                            break;
-                        case TowerKind.Frost:
-                            <path d="M 0 -18 L 16 0 L 0 18 L -16 0 Z M -19 0 H 19 M 0 -19 V 19" class="tower-shape" />
-                            break;
-                    }
+                    <UnitSprite Tower="tower.Kind" Level="tower.Level" X="-45" Y="-45" Size="90" />
                     <g><text y="43" text-anchor="middle" class="tower-level">@pad.Id · L@(tower.Level)</text></g>
                 }
             </g>
         }
         @foreach (var enemy in State.Enemies)
         {
-            var p = BastionMap.PositionAt(enemy.Distance);
+            var p = Map.PositionAt(enemy.Distance);
             <g @key="(-enemy.Id)" transform="translate(@N(p.X) @N(p.Y))" class="enemy @(enemy.SlowTicks > 0 ? "slowed" : "")" data-kind="@enemy.Kind">
                 <title>@EnemyCatalog.Get(enemy.Kind).Name: @Math.Ceiling(enemy.Health) health</title>
-                @switch (enemy.Kind)
-                {
-                    case EnemyKind.Runner: <path d="M -13 -11 L 15 0 L -13 11 L -5 0 Z" /> break;
-                    case EnemyKind.Armored: <path d="M -14 -14 H 14 V 7 L 0 18 L -14 7 Z" /> break;
-                    case EnemyKind.Boss: <path d="M -23 -18 L -9 -10 L 0 -27 L 9 -10 L 23 -18 L 19 19 L 0 27 L -19 19 Z" /> break;
-                    default: <rect x="-11" y="-11" width="22" height="22" rx="4" /> break;
-                }
+                @{ var size = enemy.Kind == EnemyKind.Boss ? 78 : enemy.Kind is EnemyKind.Troll or EnemyKind.Ent ? 64 : 46; }
+                <g transform="rotate(@N(Map.HeadingAt(enemy.Distance)))"><UnitSprite Enemy="enemy.Kind" X="@(-size/2)" Y="@(-size/2)" Size="size" /></g>
                 <rect x="-17" y="-31" width="34" height="5" fill="#07101b" stroke="none" />
                 <rect x="-17" y="-31" width="@N(34 * enemy.Health / enemy.MaxHealth)" height="5" fill="#fba376" stroke="none" />
             </g>
@@ -83,6 +57,7 @@
     [Parameter] public IReadOnlyList<ShotEffect> Effects { get; set; } = [];
     [Parameter] public IReadOnlyList<BurstEffect> Bursts { get; set; } = [];
     private static string N(double value) => value.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
-    private static readonly string PathPoints = string.Join(" ", BastionMap.Path.Select(p => $"{N(p.X)},{N(p.Y)}"));
+    private BattleMap Map => Campaign.Get(State.StageNumber).Map;
+    private string PathPoints => string.Join(" ", Map.Path.Select(p => $"{N(p.X)},{N(p.Y)}"));
     private Task SelectKey(KeyboardEventArgs e, int pad) => e.Key is "Enter" or " " ? OnSelect.InvokeAsync(pad) : Task.CompletedTask;
 }

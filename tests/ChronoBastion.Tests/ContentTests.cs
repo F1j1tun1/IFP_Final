@@ -21,14 +21,15 @@ public sealed class ContentTests
     public void Every_wave_has_a_valid_increasing_schedule_and_the_final_wave_has_one_boss()
     {
         var previousCount = 0;
-        for (var wave = 1; wave <= 10; wave++)
+        for (var wave = 1; wave <= GameRules.TotalWaves; wave++)
         {
+            if (wave is 13 or 25) previousCount = 0;
             var schedule = WavePlanner.Schedule(wave);
             Assert.Equal(WavePlanner.CountEnemies(WavePlanner.Describe(wave)), schedule.Length);
             Assert.True(schedule.Length > previousCount);
             Assert.Equal(0, schedule[0].AtTick);
             Assert.All(schedule.Zip(schedule.Skip(1)), pair => Assert.True(pair.Second.AtTick > pair.First.AtTick));
-            Assert.Equal(wave == 10 ? 1 : 0, schedule.Count(spawn => spawn.Kind == EnemyKind.Boss));
+            Assert.Equal(wave == GameRules.TotalWaves ? 1 : 0, schedule.Count(spawn => spawn.Kind == EnemyKind.Boss));
             previousCount = schedule.Length;
         }
     }
@@ -62,7 +63,7 @@ public sealed class ContentTests
 
     [Theory]
     [InlineData(0)]
-    [InlineData(11)]
+    [InlineData(40)]
     public void Nonexistent_waves_are_rejected(int wave) =>
         Assert.Throws<ArgumentOutOfRangeException>(() => WavePlanner.Describe(wave));
 }

@@ -6,6 +6,7 @@ public abstract record GameCommand
     public sealed record UpgradeTower(int PadId) : GameCommand;
     public sealed record SellTower(int PadId) : GameCommand;
     public sealed record SetTargetPriority(int PadId, TargetPriority Priority) : GameCommand;
+    public sealed record NextStage : GameCommand;
     public sealed record StartWave : GameCommand;
     public sealed record SetPaused(bool Paused) : GameCommand;
     public sealed record SetSpeed(int Multiplier) : GameCommand;

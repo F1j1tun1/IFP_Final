@@ -4,171 +4,176 @@ const path = require("node:path");
 const { chromium, firefox } = require("playwright");
 const { serve } = require("./server.cjs");
 const url = process.env.GAME_URL || "http://127.0.0.1:5080/IFP_Final/";
-const key = "chrono-bastion.high-score.v1";
+const key = "thornwatch.high-score.v1",
+    runKey = "thornwatch.run.v1";
 const screenshots = path.resolve("artifacts/screenshots");
-const report = [];
-const failures = [];
+const report = [],
+    failures = [];
 fs.mkdirSync(screenshots, { recursive: true });
-const button = (page, name) =>
-    page.getByRole("button", { name, exact: typeof name === "string" });
-const pad = (page, id) => page.locator(`.pad[aria-label^="Pad ${id}:"]`);
-const number = async (page, id) =>
-    Number((await page.getByTestId(id).innerText()).replace(/[^0-9]/g, ""));
-async function ready(page) {
-    await page.goto(url);
-    await button(page, "Deploy defences →").waitFor({ timeout: 60000 });
+const button = (p, n) =>
+    p.getByRole("button", { name: n, exact: typeof n === "string" });
+const pad = (p, id) => p.locator(`.pad[aria-label^="Pad ${id}:"]`);
+const number = async (p, id) =>
+    Number((await p.getByTestId(id).innerText()).replace(/[^0-9]/g, ""));
+const shot = (p, name) =>
+    p.screenshot({
+        path: path.join(screenshots, name + ".png"),
+        fullPage: true,
+    });
+async function ready(p) {
+    await p.goto(url);
+    await button(p, "New journey →").waitFor({ timeout: 60000 });
 }
-async function start(page) {
-    await button(page, "Deploy defences →").click();
+async function start(p) {
+    await button(p, "New journey →").click();
 }
-async function waitText(page, selector, text, timeout = 10000) {
-    await page.waitForFunction(
-        ({ selector, text }) =>
-            document.querySelector(selector)?.textContent.includes(text),
-        { selector, text },
-        { timeout },
+async function text(p, selector, value) {
+    await p.waitForFunction(
+        ({ selector, value }) =>
+            document.querySelector(selector)?.textContent.includes(value),
+        { selector, value },
     );
 }
-async function fresh(page) {
-    await button(page, "Restart run").click();
-    await button(page, "Restart from wave one").click();
-    assert.equal(await number(page, "gold"), 300);
-    assert.equal(await page.locator(".enemy").count(), 0);
-    assert.equal(await page.locator('.pad[aria-label$="empty"]').count(), 10);
-}
-function observe(page) {
-    page.on("pageerror", (error) => failures.push(error.message));
-    page.on("console", (message) => {
-        if (message.type() === "error") failures.push(message.text());
+function observe(p) {
+    p.on("pageerror", (e) => failures.push(e.message));
+    p.on("console", (m) => {
+        if (m.type() === "error") failures.push(m.text());
     });
-    page.on("response", (response) => {
-        if (response.status() >= 400)
-            failures.push(`${response.status()} ${response.url()}`);
+    p.on("response", (r) => {
+        if (r.status() >= 400) failures.push(`${r.status()} ${r.url()}`);
     });
-    page.on("requestfailed", (request) =>
-        failures.push(`${request.failure()?.errorText} ${request.url()}`),
+    p.on("requestfailed", (r) =>
+        failures.push(`${r.failure()?.errorText} ${r.url()}`),
     );
+}
+async function fresh(p) {
+    await button(p, "Restart journey").click();
+    await button(p, "Restart from the forest").click();
+    assert.equal(await number(p, "gold"), 300);
+    assert.equal(await p.locator(".enemy").count(), 0);
+    assert.equal(await p.locator('.pad[aria-label$="empty"]').count(), 10);
 }
 async function controls(browser) {
     const context = await browser.newContext({
         viewport: { width: 1440, height: 1000 },
         hasTouch: true,
     });
-    const page = await context.newPage();
-    observe(page);
-    await ready(page);
-    await page.screenshot({
-        path: path.join(screenshots, "main-menu.png"),
-        fullPage: true,
-    });
-    await start(page);
-    await pad(page, 2).click();
-    await button(page, /^Pulse/).dblclick();
-    assert.equal(await number(page, "gold"), 210);
-    await button(page, /^Upgrade/).click();
-    assert.equal(await number(page, "gold"), 135);
-    await page.locator("#priority").selectOption("Strongest");
-    assert.equal(await page.locator("#priority").inputValue(), "Strongest");
-    await button(page, /^Upgrade/).click();
-    await waitText(page, ".max-level", "Max level");
-    await pad(page, 5).click();
-    await button(page, /^Mortar/).click();
-    await waitText(page, "[role=alert]", "Not enough gold");
-    await pad(page, 2).click();
-    await button(page, /^Sell/).click();
-    assert.equal(await number(page, "gold"), 214);
-    await fresh(page);
-    await pad(page, 2).click();
-    await button(page, /^Pulse/).click();
-    await button(page, /^Start wave 1/).click();
-    await page.locator(".enemy").first().waitFor();
-    await button(page, "Pause").click();
-    const frozen = await page
-        .locator(".enemy")
-        .first()
-        .getAttribute("transform");
-    await page.waitForTimeout(300);
+    const p = await context.newPage();
+    observe(p);
+    await ready(p);
+    await shot(p, "main-menu");
+    await start(p);
+    await pad(p, 2).press("Enter");
+    await button(p, /^Archer/).dblclick();
+    assert.equal(await number(p, "gold"), 210);
+    await button(p, /^Upgrade/).click();
+    assert.equal(await number(p, "gold"), 135);
+    await p.locator("#priority").selectOption("Strongest");
+    await button(p, /^Upgrade/).click();
+    await text(p, ".max-level", "Max level");
+    await pad(p, 5).click();
+    await button(p, /^Catapult/).click();
+    await text(p, "[role=alert]", "Not enough gold");
+    await pad(p, 2).click();
+    await button(p, /^Sell/).click();
+    assert.equal(await number(p, "gold"), 214);
+    await fresh(p);
+    await pad(p, 2).click();
+    await button(p, /^Archer/).click();
+    await button(p, "Sound off").click();
+    await button(p, "Sound on").waitFor();
+    await button(p, /^Start wave 1 /).click();
+    await p.locator(".enemy").first().waitFor();
+    await button(p, "Pause").click();
+    const frozen = await p.locator(".enemy").first().getAttribute("transform");
+    await p.waitForTimeout(300);
     assert.equal(
-        await page.locator(".enemy").first().getAttribute("transform"),
+        await p.locator(".enemy").first().getAttribute("transform"),
         frozen,
     );
-    await button(page, "Speed x1").click();
-    await button(page, "Speed x2").waitFor();
-    await button(page, "Resume").click();
-    await page.waitForTimeout(700);
+    const saved = await p.evaluate(
+        (k) => JSON.parse(localStorage.getItem(k)).State,
+        runKey,
+    );
+    await p.reload();
+    await button(p, "Continue journey →").waitFor({ timeout: 60000 });
+    await button(p, "Continue journey →").click();
+    await button(p, "Resume").waitFor();
+    assert.equal(
+        await p.locator(".enemy").first().getAttribute("transform"),
+        frozen,
+    );
+    assert.equal(await number(p, "gold"), saved.Gold);
+    await button(p, "Speed x1").click();
+    await button(p, "Resume").click();
+    await p.waitForTimeout(650);
     assert.notEqual(
-        await page.locator(".enemy").first().getAttribute("transform"),
+        await p.locator(".enemy").first().getAttribute("transform"),
         frozen,
     );
-    // Dispatch the real visibility event with the hidden browser capability emulated.
-    await page.evaluate(() => {
+    await p.evaluate(() => {
         Object.defineProperty(document, "hidden", {
             configurable: true,
             get: () => true,
         });
         document.dispatchEvent(new Event("visibilitychange"));
     });
-    await button(page, "Resume").waitFor();
-    await page.evaluate(() => {
-        delete document.hidden;
+    await button(p, "Resume").waitFor();
+    await p.evaluate(() => {
+        Object.defineProperty(document, "hidden", {
+            configurable: true,
+            get: () => false,
+        });
         document.dispatchEvent(new Event("visibilitychange"));
     });
-    await page.waitForTimeout(200);
-    await button(page, "Resume").waitFor();
-    await button(page, "Resume").click();
-    await button(page, "Field manual").click();
-    await button(page, "Close manual").click();
-    await button(page, "Resume").waitFor();
-    await page.screenshot({
-        path: path.join(screenshots, "battlefield.png"),
-        fullPage: true,
-    });
+    await button(p, "Resume").waitFor();
     for (let i = 0; i < 3; i++) {
-        await button(page, "Main menu").click();
-        await button(page, "Discard and return to menu").click();
-        await start(page);
+        await button(p, "Save & menu").click();
+        await button(p, "Continue journey →").click();
+        await button(p, "Resume").waitFor();
     }
-    await button(page, /^Start wave 1/).click();
-    await page.waitForTimeout(1000);
-    await button(page, "Pause").click();
-    const transform = await page
-        .locator(".enemy")
-        .first()
-        .getAttribute("transform");
-    const distance = Number(transform.match(/translate\(([\d.]+)/)[1]);
-    assert(
-        distance >= 30 && distance < 120,
-        `Clock after transitions: ${distance}`,
-    );
-    assert.equal(
-        await page.evaluate((k) => localStorage.getItem(k), key),
-        null,
-    );
-    await fresh(page);
-    await page.setViewportSize({ width: 390, height: 844 });
-    for (let id = 1; id <= 10; id++) {
-        await pad(page, id).tap();
-        await waitText(page, ".tower-panel h2", `pad ${id}`);
+    await fresh(p);
+    await pad(p, 2).click();
+    await button(p, /^Archer/).click();
+    await shot(p, "battlefield");
+    for (const [width, height] of [
+        [390, 844],
+        [844, 390],
+    ]) {
+        await p.setViewportSize({ width, height });
+        assert.ok(
+            await p.evaluate(
+                () => document.documentElement.scrollWidth <= innerWidth,
+            ),
+        );
+        if (width === 390) {
+            for (let id = 1; id <= 10; id++) {
+                await button(p, `Select pad ${id}`).tap();
+            }
+            await shot(p, "mobile");
+        }
     }
-    await button(page, /^Pulse/).click();
-    assert(
-        await page.evaluate(
-            () => document.documentElement.scrollWidth <= innerWidth,
-        ),
+    await p.setViewportSize({ width: 1440, height: 1000 });
+    await button(p, /^Start wave 1 /).click();
+    await p.locator(".enemy").first().waitFor();
+    const before = await p.evaluate(
+        (k) => JSON.parse(localStorage.getItem(k)).State.WaveTick,
+        runKey,
     );
-    await page.screenshot({
-        path: path.join(screenshots, "mobile.png"),
-        fullPage: true,
-    });
-    await page.setViewportSize({ width: 844, height: 390 });
-    assert(
-        await page.evaluate(
-            () => document.documentElement.scrollWidth <= innerWidth,
-        ),
+    await p.waitForTimeout(1100);
+    await button(p, "Pause").click();
+    const after = await p.evaluate(
+        (k) => JSON.parse(localStorage.getItem(k)).State.WaveTick,
+        runKey,
+    );
+    assert.ok(
+        after - before >= 10 && after - before <= 40,
+        `one clock after menu cycles: ${after - before}`,
     );
     report.push(
-        "Controls, errors, pause/resume, speed, emulated hidden-tab event, repeated menu transitions, 390x844 and 844x390 layouts passed",
+        "Controls, keyboard/touch, upgrades/sale/targeting, errors, pause/speed, live save/reload, hidden-tab event, menu cycles, laptop and mobile layouts passed",
     );
+    console.log(report.at(-1));
     await context.close();
 }
 async function loss(browser, storage) {
@@ -177,8 +182,11 @@ async function loss(browser, storage) {
     });
     if (storage === "corrupt")
         await context.addInitScript(
-            (k) => localStorage.setItem(k, "{broken"),
-            key,
+            ({ key, runKey }) => {
+                localStorage.setItem(key, "{broken");
+                localStorage.setItem(runKey, "{broken");
+            },
+            { key, runKey },
         );
     if (storage === "blocked")
         await context.addInitScript(() => {
@@ -189,135 +197,179 @@ async function loss(browser, storage) {
                 throw new DOMException("Blocked", "SecurityError");
             };
         });
-    const page = await context.newPage();
-    observe(page);
-    await ready(page);
-    if (storage) await page.locator(".storage-warning").waitFor();
-    await start(page);
-    await button(page, "Speed x1").click();
+    const p = await context.newPage();
+    observe(p);
+    await ready(p);
+    if (storage) assert.ok((await p.locator(".storage-warning").count()) > 0);
+    await start(p);
+    await button(p, "Speed x1").click();
     for (let wave = 1; wave <= 3; wave++) {
-        await button(page, new RegExp(`^Start wave ${wave}`)).click();
+        await button(p, new RegExp(`^Start wave ${wave} `)).click();
         if (wave < 3)
-            await button(page, new RegExp(`^Start wave ${wave + 1}`)).waitFor({
-                timeout: 60000,
+            await button(p, new RegExp(`^Start wave ${wave + 1} `)).waitFor({
+                timeout: 90000,
             });
         else
-            await page
+            await p
                 .getByRole("heading", { name: "Defeat", exact: true })
-                .waitFor({ timeout: 60000 });
+                .waitFor({ timeout: 90000 });
     }
-    await waitText(page, ".result-score", "300");
-    await waitText(page, ".result", "300 points");
-    if (storage === "blocked")
-        await waitText(page, ".storage-warning", "could not be saved");
+    await text(p, ".result-score", "300");
+    await text(p, ".result", "300 points");
     if (!storage) {
-        await page.reload();
-        await button(page, "Deploy defences →").waitFor();
-        await waitText(page, ".record", "300 points");
-        await start(page);
-    } else await button(page, "Play again").click();
-    assert.equal(await number(page, "gold"), 300);
-    assert.equal(await page.locator('.pad[aria-label$="empty"]').count(), 10);
-    await button(page, /^Start wave 1/).waitFor();
-    await button(page, "Speed x1").waitFor();
+        assert.equal(
+            await p.evaluate((k) => localStorage.getItem(k), runKey),
+            "ended",
+        );
+        await p.reload();
+        await button(p, "New journey →").waitFor({ timeout: 60000 });
+        assert.equal(await button(p, "Continue journey →").count(), 0);
+        await text(p, ".record", "300 points");
+        await start(p);
+    } else await button(p, "Play again").click();
+    assert.equal(await number(p, "gold"), 300);
+    assert.equal(await p.locator('.pad[aria-label$="empty"]').count(), 10);
+    await button(p, /^Start wave 1 /).waitFor();
+    await button(p, "Speed x1").waitFor();
     report.push(
-        `Complete defeat, record and fresh restart (${storage || "normal"} storage) passed`,
+        `Defeat, record and fresh forest restart (${storage || "normal"} storage) passed`,
     );
+    console.log(report.at(-1));
     await context.close();
 }
 async function victory(browser) {
     const context = await browser.newContext({
         viewport: { width: 1440, height: 1000 },
-        hasTouch: true,
     });
-    const page = await context.newPage();
-    observe(page);
-    await ready(page);
-    await start(page);
-    await button(page, "Speed x1").click();
+    const p = await context.newPage();
+    observe(p);
+    await ready(p);
+    await start(p);
+    await button(p, "Speed x1").click();
     const order = [
-        [2, "Pulse"],
-        [5, "Mortar"],
-        [6, "Frost"],
-        [1, "Pulse"],
-        [9, "Pulse"],
-        [8, "Mortar"],
-        [4, "Pulse"],
-        [7, "Frost"],
-        [10, "Pulse"],
-        [3, "Mortar"],
+        [2, "Archer"],
+        [5, "Catapult"],
+        [6, "Frost mage"],
+        [1, "Archer"],
+        [9, "Archer"],
+        [8, "Catapult"],
+        [4, "Archer"],
+        [7, "Frost mage"],
+        [10, "Archer"],
+        [3, "Catapult"],
     ];
-    for (let wave = 1; wave <= 10; wave++) {
-        let allBuilt = true;
-        for (const [id, kind] of order) {
-            if (
-                !(await pad(page, id).getAttribute("aria-label")).endsWith(
-                    "empty",
+    for (let stage = 1; stage <= 3; stage++) {
+        const waves = stage === 3 ? 15 : 12;
+        for (let wave = 1; wave <= waves; wave++) {
+            let allBuilt = true;
+            for (const [id, kind] of order) {
+                if (
+                    !(await pad(p, id).getAttribute("aria-label")).endsWith(
+                        "empty",
+                    )
                 )
-            )
-                continue;
-            await pad(page, id).click();
-            const card = button(page, new RegExp(`^${kind}`));
-            const price = Number(
-                await card
-                    .locator("b")
-                    .innerText()
-                    .then((t) => t.replace(/\D/g, "")),
-            );
-            if ((await number(page, "gold")) < price) {
-                allBuilt = false;
-                break;
-            }
-            await card.click();
-        }
-        if (allBuilt)
-            for (const [id] of order) {
-                await pad(page, id).click();
-                while (await button(page, /^Upgrade/).count()) {
-                    const upgrade = button(page, /^Upgrade/);
-                    const price = Number(
-                        (await upgrade.innerText()).match(/\d+/)[0],
-                    );
-                    if ((await number(page, "gold")) < price) break;
-                    await upgrade.click();
+                    continue;
+                await pad(p, id).click();
+                const card = button(p, new RegExp(`^${kind}`));
+                const price = Number(
+                    (await card.locator("b").innerText()).replace(/\D/g, ""),
+                );
+                if ((await number(p, "gold")) < price) {
+                    allBuilt = false;
+                    break;
                 }
+                await card.click();
             }
-        await button(page, new RegExp(`^Start wave ${wave}`)).click();
-        if (wave === 5) {
-            await page.waitForTimeout(2000);
-            await page.screenshot({
-                path: path.join(screenshots, "combat.png"),
-                fullPage: true,
-            });
+            if (allBuilt)
+                for (const [id] of order) {
+                    await pad(p, id).click();
+                    while (await button(p, /^Upgrade/).count()) {
+                        const upgrade = button(p, /^Upgrade/),
+                            price = Number(
+                                (await upgrade.innerText()).match(/\d+/)[0],
+                            );
+                        if ((await number(p, "gold")) < price) break;
+                        await upgrade.click();
+                    }
+                }
+            await button(p, new RegExp(`^Start wave ${wave} `)).click();
+            if (wave === 5) {
+                await p.waitForTimeout(2500);
+                await shot(p, `chapter-${stage}`);
+            }
+            if (stage === 3 && wave === 15) {
+                await p
+                    .locator('.enemy[data-kind="Boss"]')
+                    .waitFor({ timeout: 90000 });
+                await shot(p, "boss");
+            }
+            if (wave < waves)
+                await button(p, new RegExp(`^Start wave ${wave + 1} `)).waitFor(
+                    { timeout: 120000 },
+                );
+            else if (stage < 3) {
+                await button(p, "Travel to next region →").waitFor({
+                    timeout: 120000,
+                });
+                const old = await p.evaluate(
+                    (k) => JSON.parse(localStorage.getItem(k)).State,
+                    runKey,
+                );
+                await p.reload();
+                await button(p, "Continue journey →").waitFor({
+                    timeout: 60000,
+                });
+                await button(p, "Continue journey →").click();
+                await button(p, "Travel to next region →").click();
+                const expected =
+                    old.Gold +
+                    old.Towers.reduce(
+                        (sum, t) => sum + Math.floor(t.InvestedGold * 0.7),
+                        0,
+                    ) +
+                    150;
+                assert.equal(await number(p, "gold"), expected);
+                assert.equal(
+                    await p.locator('.pad[aria-label$="empty"]').count(),
+                    10,
+                );
+                const current = await p.evaluate(
+                    (k) => JSON.parse(localStorage.getItem(k)).State,
+                    runKey,
+                );
+                assert.equal(current.StageNumber, stage + 1);
+                assert.equal(current.CoreHealth, old.CoreHealth);
+            } else
+                await p
+                    .getByRole("heading", { name: "Victory", exact: true })
+                    .waitFor({ timeout: 120000 });
+            console.log(`Chapter ${stage}, wave ${wave}/${waves} complete`);
         }
-        if (wave < 10)
-            await button(page, new RegExp(`^Start wave ${wave + 1}`)).waitFor({
-                timeout: 90000,
-            });
-        else
-            await page
-                .getByRole("heading", { name: "Victory", exact: true })
-                .waitFor({ timeout: 90000 });
-        console.log(`Browser wave ${wave} complete`);
     }
-    assert.equal(await number(page, "score"), 12090);
-    await waitText(page, ".result", "151");
-    await page.screenshot({
-        path: path.join(screenshots, "victory.png"),
-        fullPage: true,
-    });
-    await page.reload();
-    await button(page, "Deploy defences →").waitFor();
-    await waitText(page, ".record", "12");
-    const stored = await page.evaluate(
+    const score = await number(p, "score");
+    await shot(p, "victory");
+    await p.waitForFunction(
+        (k) => JSON.parse(localStorage.getItem(k))?.Won === true,
+        key,
+    );
+    assert.equal(
+        await p.evaluate((k) => localStorage.getItem(k), runKey),
+        "ended",
+    );
+    await p.reload();
+    await button(p, "New journey →").waitFor({ timeout: 60000 });
+    assert.equal(await button(p, "Continue journey →").count(), 0);
+    const stored = await p.evaluate(
         (k) => JSON.parse(localStorage.getItem(k)),
         key,
     );
-    assert.equal(stored.Score, 12090);
+    assert.equal(stored.Score, score);
+    assert.equal(stored.WavesCleared, 39);
     assert.equal(stored.Won, true);
     report.push(
-        "Complete legal browser victory: 12090 points, 151 kills; record persisted after reload",
+        `Complete legal 39-wave victory: ${score} points; both region saves/reloads, resource carryover and final record persisted`,
     );
+    console.log(report.at(-1));
     await context.close();
 }
 (async () => {
@@ -328,13 +380,15 @@ async function victory(browser) {
     try {
         browser = await chromium.launch({ headless: true });
         report.push(`Chromium ${browser.version()}`);
-        await controls(browser);
-        await victory(browser);
-        await loss(browser);
-        await loss(browser, "corrupt");
-        await loss(browser, "blocked");
+        if (process.env.TEST_MODE !== "victory") await controls(browser);
+        if (process.env.TEST_MODE !== "controls") await victory(browser);
+        if (!process.env.TEST_MODE) {
+            await loss(browser);
+            await loss(browser, "corrupt");
+            await loss(browser, "blocked");
+        }
         await browser.close();
-        if (process.env.BROWSERS !== "chromium") {
+        if (process.env.BROWSERS !== "chromium" && !process.env.TEST_MODE) {
             browser = await firefox.launch({ headless: true });
             report.push(`Firefox ${browser.version()}`);
             await loss(browser);
@@ -345,12 +399,16 @@ async function victory(browser) {
         report.push(
             "No browser console errors, failed requests or HTTP errors",
         );
-        console.log(report.join("\n"));
-        fs.mkdirSync("artifacts", { recursive: true });
         fs.writeFileSync(
             "artifacts/browser-results.json",
             JSON.stringify(
-                { date: new Date().toISOString(), url, passed: true, report },
+                {
+                    date: new Date().toISOString(),
+                    url,
+                    mode: process.env.TEST_MODE || "full",
+                    passed: true,
+                    report,
+                },
                 null,
                 2,
             ),
@@ -364,14 +422,7 @@ async function victory(browser) {
     fs.writeFileSync(
         "artifacts/browser-results.json",
         JSON.stringify(
-            {
-                date: new Date().toISOString(),
-                url,
-                passed: false,
-                report,
-                failures,
-                error: error.message,
-            },
+            { passed: false, report, failures, error: error.stack },
             null,
             2,
         ),

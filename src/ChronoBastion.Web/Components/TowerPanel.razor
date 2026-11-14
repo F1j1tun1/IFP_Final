@@ -1,14 +1,14 @@
 <aside class="tower-panel" aria-label="Tower controls">
-    <p class="eyebrow">DEFENCE SYSTEMS</p>
+    <p class="eyebrow">YOUR DEFENDERS</p>
     @if (SelectedPad is not int pad)
     {
-        <h2>Choose your position</h2><p>Select a numbered socket on the battlefield to build a tower.</p>
+        <h2>Choose your position</h2><p>Select a numbered clearing on the battlefield to build a tower.</p>
         <div class="panel-hint">Cover the bends.<br />Combine firepower with frost.</div>
     }
     else if (State.Towers.FirstOrDefault(t => t.PadId == pad) is { } tower)
     {
         var stats = TowerCatalog.Get(tower.Kind).AtLevel(tower.Level);
-        <h2>@tower.Kind <small>· Pad @pad</small></h2>
+        <h2>@TowerCatalog.Get(tower.Kind).Name <small>· Pad @pad</small></h2>
         <p>Level @tower.Level / @GameRules.MaxTowerLevel</p>
         <dl class="stats"><div><dt>Damage</dt><dd>@stats.Damage</dd></div><div><dt>Range</dt><dd>@stats.Range</dd></div><div><dt>Fire interval</dt><dd>@((stats.FireIntervalTicks * GameRules.TickSeconds).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))s</dd></div></dl>
         <label for="priority">Target priority</label>
@@ -30,7 +30,7 @@
         {
             var price = definition.AtLevel(1).Price;
             <button class="build-card @definition.Kind.ToString().ToLowerInvariant()" @onclick="() => OnCommand.InvokeAsync(new GameCommand.BuildTower(pad, definition.Kind))">
-                <span><strong>@definition.Name</strong><b>@price <small>G</small></b></span>
+                <UnitSprite Tower="definition.Kind" Size="64" /><span><strong>@definition.Name</strong><b>@price <small>G</small></b></span>
                 <small>@definition.Description</small>
                 @if (State.Gold < price) { <em>Need @(price - State.Gold) more gold</em> }
             </button>

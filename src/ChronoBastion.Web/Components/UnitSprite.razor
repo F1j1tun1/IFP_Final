@@ -1,0 +1,42 @@
+<svg class="unit-sprite" x="@X" y="@Y" width="@Size" height="@Size" viewBox="0 0 100 100" aria-hidden="true" overflow="hidden">
+    <foreignObject width="100" height="100"><div xmlns="http://www.w3.org/1999/xhtml" style="@SpriteStyle"></div></foreignObject>
+</svg>
+@code {
+    [Parameter] public TowerKind? Tower { get; set; }
+    [Parameter] public int Level { get; set; } = 1;
+    [Parameter] public EnemyKind Enemy { get; set; }
+    [Parameter] public double X { get; set; }
+    [Parameter] public double Y { get; set; }
+    [Parameter] public double Size { get; set; } = 80;
+    private string SpriteStyle
+    {
+        get
+        {
+            int x, y, cell;
+            string asset;
+            if (Tower is { } tower)
+            {
+                var row = tower == TowerKind.Pulse ? 0 : tower == TowerKind.Frost ? 1 : 2;
+                x = Level == 1 ? 10 : Level == 2 ? 425 : 835;
+                y = row == 0 ? 20 : row == 1 ? 410 : 800;
+                // Atlas regions exclude neighbouring artwork and retain transparent margins.
+                cell = 400;
+                asset = "towers";
+            }
+            else
+            {
+                var index = Enemy switch {
+                    EnemyKind.Grunt => 0, EnemyKind.Runner => 1, EnemyKind.Orc => 2, EnemyKind.Armored => 3,
+                    EnemyKind.Shaman => 4, EnemyKind.Boss => 5, EnemyKind.Wolf => 6, EnemyKind.Spider => 7,
+                    EnemyKind.Ent => 8, EnemyKind.Skeleton => 9, EnemyKind.ArmoredSkeleton => 10,
+                    EnemyKind.Zombie => 11, EnemyKind.Wraith => 12, EnemyKind.Troll => 13, _ => 0 };
+                x = index % 4 * 313;
+                y = index / 4 == 3 ? 930 : index / 4 * 315;
+                cell = 313;
+                asset = "enemies";
+            }
+            var scale = 100.0 / cell;
+            return FormattableString.Invariant($"width:100px;height:100px;background-image:url('art/{asset}.png');background-repeat:no-repeat;background-size:{1254 * scale}px {1254 * scale}px;background-position:{-x * scale}px {-y * scale}px;");
+        }
+    }
+}

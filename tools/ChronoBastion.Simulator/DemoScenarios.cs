@@ -25,6 +25,7 @@ public static class DemoScenarios
         var ticks = 0;
         while (!state.IsFinished && ticks < 100000)
         {
+            if (state.Phase == GamePhase.StageCleared) state = Apply(state, new GameCommand.NextStage());
             if (state.Phase == GamePhase.Planning)
             {
                 if (defend)

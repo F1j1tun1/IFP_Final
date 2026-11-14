@@ -6,6 +6,20 @@ namespace ChronoBastion.Core.Content;
 
 public sealed record BuildPad(int Id, Position Position);
 
+public sealed class BattleMap(ImmutableArray<Position> path, ImmutableArray<BuildPad> pads)
+{
+    public ImmutableArray<Position> Path { get; } = path;
+    public ImmutableArray<BuildPad> Pads { get; } = pads;
+    public double Length { get; } = Enumerable.Range(1, path.Length - 1).Sum(i => Math.Sqrt(path[i - 1].DistanceSquaredTo(path[i])));
+    public Position PositionAt(double distance) => BastionMap.Interpolate(Path, Length, distance);
+    public double HeadingAt(double distance)
+    {
+        var a = PositionAt(Math.Max(0, distance - 1));
+        var b = PositionAt(Math.Min(Length, distance + 1));
+        return Math.Atan2(b.Y - a.Y, b.X - a.X) * 180 / Math.PI - 90;
+    }
+}
+
 public static class BastionMap
 {
     public const int Width = 960;
@@ -33,7 +47,9 @@ public static class BastionMap
             ? Option<BuildPad>.Some(pad)
             : Option<BuildPad>.None;
 
-    public static Position PositionAt(double distance)
+    public static Position PositionAt(double distance) => Interpolate(Path, Length, distance);
+
+    internal static Position Interpolate(ImmutableArray<Position> Path, double Length, double distance)
     {
         if (!double.IsFinite(distance))
             throw new ArgumentOutOfRangeException(nameof(distance));

@@ -124,13 +124,13 @@ public sealed class CombatTests
     }
 
     [Fact]
-    public void Wave_ten_ends_the_game_and_awards_the_health_bonus_once()
+    public void Final_wave_ends_the_game_and_awards_the_health_bonus_once()
     {
-        var state = TestGame.Combat() with { Schedule = [], WaveNumber = 10, CoreHealth = 7, Score = 50 };
+        var state = TestGame.Combat() with { Schedule = [], StageNumber = 3, WaveNumber = 39, CoreHealth = 7, Score = 50 };
         var result = GameEngine.Tick(state);
         Assert.Equal(GamePhase.Won, result.State.Phase);
-        Assert.Equal(10, result.State.WavesCleared);
-        Assert.Equal(50 + 1000 + 1000 + 350, result.State.Score);
+        Assert.Equal(39, result.State.WavesCleared);
+        Assert.Equal(50 + 3900 + 1000 + 350, result.State.Score);
         Assert.True(Assert.Single(result.Events.OfType<GameEvent.GameEnded>()).Won);
         Assert.Equal(result.State.Score, GameEngine.Tick(result.State).State.Score);
     }

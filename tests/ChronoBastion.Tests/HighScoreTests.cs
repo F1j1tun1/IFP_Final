@@ -9,7 +9,7 @@ public sealed class HighScoreTests
     [Fact]
     public void Valid_records_round_trip()
     {
-        var score = new HighScore(1, 12000, 10, true);
+        var score = new HighScore(1, 12000, 39, true);
         var parsed = Assert.IsType<Result<Option<HighScore>, string>.Success>(HighScores.Parse(HighScores.Serialize(score)));
         Assert.Equal(score, parsed.Value.Match(value => value, () => throw new Exception("Missing record.")));
     }
@@ -29,10 +29,10 @@ public sealed class HighScoreTests
     [InlineData("null")]
     [InlineData("{}")]
     [InlineData("{\"Version\":1}")]
-    [InlineData("{\"Version\":1,\"Score\":10,\"WavesCleared\":10,\"Won\":false}")]
+    [InlineData("{\"Version\":1,\"Score\":10,\"WavesCleared\":39,\"Won\":false}")]
     [InlineData("{\"Version\":2,\"Score\":10,\"WavesCleared\":0,\"Won\":false}")]
     [InlineData("{\"Version\":1,\"Score\":-1,\"WavesCleared\":0,\"Won\":false}")]
-    [InlineData("{\"Version\":1,\"Score\":10,\"WavesCleared\":11,\"Won\":false}")]
+    [InlineData("{\"Version\":1,\"Score\":10,\"WavesCleared\":40,\"Won\":false}")]
     [InlineData("{\"Version\":1,\"Score\":10,\"WavesCleared\":1,\"Won\":true}")]
     [InlineData("{\"Version\":1,\"Score\":\"bad\"}")]
     public void Corrupted_or_incompatible_records_return_an_error(string json) =>

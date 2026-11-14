@@ -20,6 +20,10 @@ public static class GameEngine
         if (state.IsFinished)
             return Failure(GameErrorCode.GameFinished, "This run has ended. Start a new game.");
 
+        if (command is GameCommand.NextStage) return NextStage(state);
+        if (state.Phase == GamePhase.StageCleared)
+            return Failure(GameErrorCode.InvalidPhase, "Travel to the next region first.");
+
         return command switch
         {
             GameCommand.BuildTower build => Build(state, build),
@@ -35,6 +39,27 @@ public static class GameEngine
                 : Failure(GameErrorCode.InvalidSpeed, "Choose speed 1 or 2."),
             _ => Failure(GameErrorCode.UnknownCommand, "This action is not supported.")
         };
+    }
+
+    private static Result<GameTransition, GameError> NextStage(GameState state)
+    {
+        if (state.Phase != GamePhase.StageCleared || state.StageNumber >= 3)
+            return Failure(GameErrorCode.InvalidPhase, "Clear this region before travelling.");
+        var refund = state.Towers.Sum(GameRules.SellRefund);
+        const int bonus = 150;
+        return Success(state with
+        {
+            StageNumber = state.StageNumber + 1,
+            Phase = GamePhase.Planning,
+            Gold = state.Gold + refund + bonus,
+            Towers = [],
+            Enemies = [],
+            Schedule = [],
+            NextSpawnIndex = 0,
+            WaveTick = 0,
+            IsPaused = false
+        },
+            new GameEvent.StageEntered(state.StageNumber + 1, refund, bonus));
     }
 
     private static Result<GameTransition, GameError> Build(GameState state, GameCommand.BuildTower build)
@@ -143,7 +168,9 @@ public static class GameEngine
             nextSpawn++;
         }
 
-        var towers = FireTowers(state.Towers, enemies, events);
+        var map = Campaign.Get(state.StageNumber).Map;
+        ApplyAbilities(state, enemies, events, ref nextId);
+        var towers = FireTowers(state.Towers, enemies, events, map);
         var gold = state.Gold;
         var score = state.Score;
         var kills = state.Kills;
@@ -159,12 +186,12 @@ public static class GameEngine
                 gold += definition.Gold;
                 score += definition.Points;
                 kills++;
-                events.Add(new GameEvent.EnemyKilled(enemy.Id, BastionMap.PositionAt(enemy.Distance), definition.Gold, definition.Points));
+                events.Add(new GameEvent.EnemyKilled(enemy.Id, map.PositionAt(enemy.Distance), definition.Gold, definition.Points));
                 continue;
             }
 
             var moved = CombatRules.Move(enemy);
-            if (moved.Distance >= BastionMap.Length)
+            if (moved.Distance >= map.Length)
             {
                 health = Math.Max(0, health - definition.CoreDamage);
                 escaped++;
@@ -178,9 +205,16 @@ public static class GameEngine
 
         var next = state with
         {
-            Enemies = survivors.ToImmutable(), Towers = towers, Gold = gold, Score = score,
-            Kills = kills, Escaped = escaped, CoreHealth = health,
-            NextEnemyId = nextId, NextSpawnIndex = nextSpawn, WaveTick = state.WaveTick + 1
+            Enemies = survivors.ToImmutable(),
+            Towers = towers,
+            Gold = gold,
+            Score = score,
+            Kills = kills,
+            Escaped = escaped,
+            CoreHealth = health,
+            NextEnemyId = nextId,
+            NextSpawnIndex = nextSpawn,
+            WaveTick = state.WaveTick + 1
         };
 
         if (health == 0)
@@ -195,11 +229,13 @@ public static class GameEngine
             var won = next.WaveNumber == GameRules.TotalWaves;
             next = next with
             {
-                Phase = won ? GamePhase.Won : GamePhase.Planning,
+                Phase = won ? GamePhase.Won : next.WaveNumber is 12 or 24 ? GamePhase.StageCleared : GamePhase.Planning,
                 WavesCleared = next.WaveNumber,
                 Gold = next.Gold + waveGold,
                 Score = next.Score + waveScore + (won ? GameRules.VictoryBonus + health * GameRules.HealthBonus : 0),
-                Schedule = [], NextSpawnIndex = 0, IsPaused = false
+                Schedule = [],
+                NextSpawnIndex = 0,
+                IsPaused = false
             };
             events.Add(new GameEvent.WaveCleared(next.WaveNumber, waveGold, waveScore));
             if (won)
@@ -209,8 +245,40 @@ public static class GameEngine
         return new(next, events.ToImmutable());
     }
 
+    private static void ApplyAbilities(GameState state, List<Enemy> enemies, ImmutableArray<GameEvent>.Builder events, ref int nextId)
+    {
+        if (state.WaveTick == 0) return;
+        var map = Campaign.Get(state.StageNumber).Map;
+        // Abilities use simulation ticks, so pausing, speed and reload stay deterministic.
+        foreach (var source in enemies.Where(e => e.Health > 0).ToArray())
+        {
+            if (source.Kind == EnemyKind.Boss && state.WaveTick % 120 == 0 && enemies.Count < 150)
+            {
+                for (var i = 0; i < 3; i++)
+                {
+                    var goblin = EnemyCatalog.Spawn(EnemyKind.Grunt, nextId++, state.WaveNumber)
+                        with
+                    { Distance = Math.Max(0, source.Distance - 20 * (i + 1)) };
+                    enemies.Add(goblin);
+                    events.Add(new GameEvent.EnemySpawned(goblin.Id, goblin.Kind));
+                }
+                events.Add(new GameEvent.Summoned(map.PositionAt(source.Distance)));
+            }
+            if (source.Kind == EnemyKind.Shaman && state.WaveTick % 60 == 0)
+            {
+                var origin = map.PositionAt(source.Distance);
+                for (var i = 0; i < enemies.Count; i++)
+                {
+                    var ally = enemies[i];
+                    if (ally.Health > 0 && ally.Kind != EnemyKind.Boss && origin.DistanceSquaredTo(map.PositionAt(ally.Distance)) <= 10000)
+                        enemies[i] = ally with { Health = Math.Min(ally.MaxHealth, ally.Health + ally.MaxHealth * 0.04) };
+                }
+            }
+        }
+    }
+
     private static ImmutableArray<Tower> FireTowers(
-        ImmutableArray<Tower> towers, List<Enemy> enemies, ImmutableArray<GameEvent>.Builder events)
+        ImmutableArray<Tower> towers, List<Enemy> enemies, ImmutableArray<GameEvent>.Builder events, BattleMap map)
     {
         var updated = towers.ToBuilder();
         for (var i = 0; i < towers.Length; i++)
@@ -221,16 +289,16 @@ public static class GameEngine
                 continue;
 
             var stats = TowerCatalog.Get(tower.Kind).AtLevel(tower.Level);
-            var position = BastionMap.Pads.First(pad => pad.Id == tower.PadId).Position;
-            var target = CombatRules.SelectTarget(enemies, position, stats.Range, CombatRules.RankBy(tower.Priority, position));
+            var position = map.Pads.First(pad => pad.Id == tower.PadId).Position;
+            var target = CombatRules.SelectTarget(enemies, position, stats.Range, CombatRules.RankBy(tower.Priority, position, map), map);
             target.Match(enemy =>
             {
-                var impact = BastionMap.PositionAt(enemy.Distance);
+                var impact = map.PositionAt(enemy.Distance);
                 for (var index = 0; index < enemies.Count; index++)
                 {
                     var candidate = enemies[index];
                     var inSplash = stats.SplashRadius > 0 &&
-                        impact.DistanceSquaredTo(BastionMap.PositionAt(candidate.Distance)) <= stats.SplashRadius * stats.SplashRadius;
+                        impact.DistanceSquaredTo(map.PositionAt(candidate.Distance)) <= stats.SplashRadius * stats.SplashRadius;
                     if (candidate.Health > 0 && (candidate.Id == enemy.Id || inSplash))
                         enemies[index] = CombatRules.ApplyHit(candidate, stats);
                 }

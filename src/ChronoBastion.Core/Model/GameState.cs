@@ -2,9 +2,9 @@ using System.Collections.Immutable;
 
 namespace ChronoBastion.Core.Model;
 
-public enum GamePhase { Planning, Combat, Won, Lost }
+public enum GamePhase { Planning, Combat, Won, Lost, StageCleared }
 public enum TowerKind { Pulse, Mortar, Frost }
-public enum EnemyKind { Grunt, Runner, Armored, Boss }
+public enum EnemyKind { Grunt, Runner, Armored, Boss, Orc, Shaman, Wolf, Spider, Ent, Skeleton, ArmoredSkeleton, Zombie, Wraith, Troll }
 public enum TargetPriority { First, Strongest, Nearest }
 
 public readonly record struct Position(double X, double Y)
@@ -35,6 +35,9 @@ public sealed record Spawn(int AtTick, EnemyKind Kind);
 public sealed record GameState
 {
     public GamePhase Phase { get; init; } = GamePhase.Planning;
+    public int StageNumber { get; init; } = 1;
+    public int WaveInStage => WaveNumber - (StageNumber - 1) * 12;
+    public int StageWaves => StageNumber == 3 ? 15 : 12;
     public int WaveNumber { get; init; }
     public int WavesCleared { get; init; }
     public int Gold { get; init; } = GameRules.StartingGold;
@@ -58,7 +61,7 @@ public static class GameRules
 {
     public const int StartingGold = 300;
     public const int StartingHealth = 20;
-    public const int TotalWaves = 10;
+    public const int TotalWaves = 39;
     public const int MaxTowerLevel = 3;
     public const int TicksPerSecond = 20;
     public const double TickSeconds = 1.0 / TicksPerSecond;

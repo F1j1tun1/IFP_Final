@@ -20,7 +20,17 @@ public static class GameQueries
         EnemyKind.Grunt => "A standard unit with no armor.",
         EnemyKind.Runner => "Fast and fragile. Do not let it slip past.",
         EnemyKind.Armored => "Heavy armor reduces incoming damage by 35%.",
-        EnemyKind.Boss => "The Overseer can destroy a full-health core in one hit.",
+        EnemyKind.Boss => "Summons three goblins every six battle seconds. Reaching the gate ends the run.",
+        EnemyKind.Shaman => "Restores 4% health to nearby living infantry every three battle seconds. Cannot heal the War Chief.",
+        EnemyKind.Wolf => "A fast forest hunter. Archers and frost stop its rush.",
+        EnemyKind.Spider => "Fragile swarm attacker. Its venom harms the gate on arrival, not your towers.",
+        EnemyKind.Ent => "Slow, tough bark armor. Concentrate fire before it reaches the gate.",
+        EnemyKind.Skeleton => "A nimble undead fighter with light armor.",
+        EnemyKind.ArmoredSkeleton => "Heavy armor absorbs 35% of incoming damage.",
+        EnemyKind.Zombie => "Slow and tough. No resurrection: every kill stays a kill.",
+        EnemyKind.Wraith => "Fast spectral raider. All three towers can hit it; follows the road.",
+        EnemyKind.Troll => "A slow siege brute that deals four damage to the gate.",
+        EnemyKind.Orc => "A sturdy warrior with light armor.",
         _ => "Unknown enemy."
     };
 }

@@ -36,22 +36,22 @@ public static class CombatRules
         };
     }
 
-    public static Func<Enemy, double> RankBy(TargetPriority priority, Position origin) => priority switch
+    public static Func<Enemy, double> RankBy(TargetPriority priority, Position origin, BattleMap? map = null) => priority switch
     {
         TargetPriority.First => enemy => enemy.Distance,
         TargetPriority.Strongest => enemy => enemy.Health,
-        TargetPriority.Nearest => enemy => -origin.DistanceSquaredTo(BastionMap.PositionAt(enemy.Distance)),
+        TargetPriority.Nearest => enemy => -origin.DistanceSquaredTo((map?.PositionAt(enemy.Distance) ?? BastionMap.PositionAt(enemy.Distance))),
         _ => throw new ArgumentOutOfRangeException(nameof(priority))
     };
 
     public static Option<Enemy> SelectTarget(
-        IEnumerable<Enemy> enemies, Position origin, double range, Func<Enemy, double> rank)
+        IEnumerable<Enemy> enemies, Position origin, double range, Func<Enemy, double> rank, BattleMap? map = null)
     {
         Enemy? best = null;
         var bestRank = double.NegativeInfinity;
         foreach (var enemy in enemies)
         {
-            if (enemy.Health <= 0 || origin.DistanceSquaredTo(BastionMap.PositionAt(enemy.Distance)) > range * range)
+            if (enemy.Health <= 0 || origin.DistanceSquaredTo(map?.PositionAt(enemy.Distance) ?? BastionMap.PositionAt(enemy.Distance)) > range * range)
                 continue;
 
             var score = rank(enemy);

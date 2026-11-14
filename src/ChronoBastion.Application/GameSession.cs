@@ -19,12 +19,24 @@ public sealed class GameSession
         var result = GameEngine.Execute(State, command);
         if (result is Result<GameTransition, GameError>.Success success)
         {
-            if (command is GameCommand.Restart or GameCommand.StartWave or GameCommand.SetPaused or GameCommand.SetSpeed)
+            if (command is GameCommand.NextStage or GameCommand.Restart or GameCommand.StartWave or GameCommand.SetPaused or GameCommand.SetSpeed)
                 accumulatedTime = 0;
             State = success.Value.State;
             Updated?.Invoke(success.Value);
         }
         return result;
+    }
+
+    public Result<GameTransition, string> Restore(string json)
+    {
+        return SavedRuns.Parse(json).Map(state =>
+        {
+            accumulatedTime = 0;
+            State = state with { IsPaused = state.Phase == GamePhase.Combat };
+            var transition = GameTransition.Unchanged(State);
+            Updated?.Invoke(transition);
+            return transition;
+        });
     }
 
     public void Advance(TimeSpan elapsed)

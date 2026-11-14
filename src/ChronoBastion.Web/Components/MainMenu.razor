@@ -1,25 +1,37 @@
 <section class="main-menu">
-    <div class="menu-copy"><p class="eyebrow">TACTICAL TOWER DEFENCE / BASTION 01</p>
-        <h1>CHRONO<br /><span>BASTION</span></h1>
-        <p class="intro">The last core is yours to defend.<br />Build your line. Hold for ten waves.</p>
-        <button class="primary play" disabled="@(!Ready)" @onclick="OnPlay">@(Ready ? "Deploy defences →" : "Initializing…")</button>
+    <div class="menu-copy"><p class="eyebrow">A FANTASY TOWER DEFENCE</p>
+        <h1>Every road<br />needs a <em>guardian.</em></h1>
+        <p class="intro">From the whispering woods to the Ironthorn Keep.<br />Raise your defences. Make your stand.</p>
+        @if (CanContinue) { <button class="primary play" @onclick="OnContinue">Continue journey →</button><p class="save-note">@SaveLabel · resumes paused</p> }
+        <button class="@(CanContinue ? "wide new-journey" : "primary play")" disabled="@(!Ready)" @onclick="OnPlay">@(Ready ? "New journey →" : "Preparing the realm…")</button>
         <button class="text-button" @onclick="OnHelp">How to play</button>
-        <div class="record"><span>LOCAL RECORD</span><strong>@RecordLabel</strong><small>Only completed runs count. Every new run starts fresh.</small></div>
+        <div class="record"><span>YOUR BEST JOURNEY</span><strong>@RecordLabel</strong><small>One life. Three regions. A kingdom to protect.</small></div>
     </div>
     <div class="menu-art" aria-hidden="true">
-        <svg viewBox="0 0 500 500"><defs><radialGradient id="menu-light"><stop stop-color="#5ce7d7" stop-opacity=".3"/><stop offset="1" stop-color="#5ce7d7" stop-opacity="0"/></radialGradient></defs>
-            <circle cx="250" cy="250" r="240" fill="url(#menu-light)"/>
-            <g fill="none" stroke="#294650"><circle cx="250" cy="250" r="205"/><circle cx="250" cy="250" r="165" stroke-dasharray="4 14"/><path d="M 250 15 V 80 M 250 420 V 485 M 15 250 H 80 M 420 250 H 485"/></g>
-            <path d="M 250 100 L 380 175 V 325 L 250 400 L 120 325 V 175 Z" fill="#152735" stroke="#54767c" stroke-width="3"/>
-            <path d="M 250 135 L 350 193 V 307 L 250 365 L 150 307 V 193 Z" fill="#0c1a27" stroke="#4dd8c5" stroke-width="2"/>
-            <path d="M 250 174 L 300 250 L 250 326 L 200 250 Z" fill="#67ebd4"/>
-            <path d="M 250 197 L 276 250 L 250 303 L 224 250 Z" fill="#d5fff4"/>
-        </svg><span>CORE ONLINE <b>●</b></span>
+        <svg viewBox="0 0 500 500">
+            <path d="M40 95Q250-30 460 90L485 360Q270 510 25 370Z" fill="#365c43" stroke="#65834f" stroke-width="3"/>
+            <path d="M70 370H190V240H330V110H440" fill="none" stroke="#263f30" stroke-width="69" stroke-linejoin="round"/>
+            <path d="M70 370H190V240H330V110H440" fill="none" stroke="#bfa06a" stroke-width="57" stroke-linejoin="round"/>
+            <path d="M80 90l-35 85h70ZM410 260l-38 95h76ZM90 195l-28 70h56Z" fill="#254837" stroke="#8a9f58" stroke-width="3"/>
+            <UnitSprite Tower="TowerKind.Pulse" Level="3" X="55" Y="240" Size="130" />
+            <UnitSprite Tower="TowerKind.Frost" Level="3" X="215" Y="105" Size="125" />
+            <UnitSprite Tower="TowerKind.Mortar" Level="2" X="315" Y="345" Size="120" />
+            <UnitSprite Enemy="EnemyKind.Grunt" X="210" Y="210" Size="62" />
+            <UnitSprite Enemy="EnemyKind.Wolf" X="150" Y="280" Size="65" />
+            <circle cx="414" cy="99" r="34" fill="#dcc681" stroke="#2c4433" stroke-width="4"/><path d="M394 114V82h10v8h20v-8h10v32Z" fill="#3d6144"/>
+        </svg><span class="art-caption">THE WHISPERING WOOD <b>CHAPTER I</b></span>
     </div>
 </section>
+<div class="chapter-cards">
+    @foreach (var chapter in Campaign.Chapters)
+    { <article><span>@(chapter.Number.ToString("00")) / @chapter.Waves WAVES</span><h2>@chapter.Name</h2><p>@chapter.Subtitle</p></article> }
+</div>
 @code {
     [Parameter] public bool Ready { get; set; }
-    [Parameter] public string RecordLabel { get; set; } = "No completed runs";
+    [Parameter] public bool CanContinue { get; set; }
+    [Parameter] public string SaveLabel { get; set; } = "Journey saved";
+    [Parameter] public string RecordLabel { get; set; } = "No completed journeys";
     [Parameter] public EventCallback OnPlay { get; set; }
+    [Parameter] public EventCallback OnContinue { get; set; }
     [Parameter] public EventCallback OnHelp { get; set; }
 }

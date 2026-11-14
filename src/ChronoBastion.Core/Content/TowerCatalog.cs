@@ -19,11 +19,11 @@ public static class TowerCatalog
 {
     public static ImmutableArray<TowerDefinition> All { get; } =
     [
-        new(TowerKind.Pulse, "Pulse", "Rapid, precise fire against a single enemy.",
+        new(TowerKind.Pulse, "Archer", "Rapid, precise fire against a single enemy.",
             [new(90, 12, 135, 8), new(75, 20, 150, 8), new(120, 32, 165, 7)]),
-        new(TowerKind.Mortar, "Mortar", "Explosive shots damage enemies near the target.",
+        new(TowerKind.Mortar, "Catapult", "Heavy stones strike groups of enemies.",
             [new(140, 28, 160, 28, 65), new(110, 46, 175, 26, 75), new(160, 72, 190, 24, 85)]),
-        new(TowerKind.Frost, "Frost", "Slows enemies so other towers can keep firing.",
+        new(TowerKind.Frost, "Frost mage", "Slows enemies so other towers can keep firing.",
             [new(100, 5, 140, 16, 0, 0.6, 35), new(80, 8, 155, 14, 0, 0.5, 40),
              new(130, 12, 170, 12, 0, 0.4, 45)])
     ];

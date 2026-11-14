@@ -1,0 +1,5 @@
+@echo off
+title Thornwatch
+cd /d "%~dp0"
+powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0Start-Game.ps1" %*
+if errorlevel 1 pause

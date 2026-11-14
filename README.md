@@ -11,7 +11,18 @@ agreed ownership, implemented mechanics and integration checks.
 
 ## Run
 
-Install the .NET 10 SDK, then run from the project folder:
+On Windows, install the [.NET 10 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0),
+download this repository with **Code > Download ZIP**, and extract the whole ZIP.
+Open **Start Game.cmd** in the extracted folder. Keep `Start-Game.ps1` and the
+project folders beside it. The launcher checks the SDK, builds the game and opens
+your browser. The first launch needs internet to download packages and may take
+a few minutes. Installing only the .NET Runtime is not enough.
+
+Keep the launcher window open while playing; Ctrl+C stops the game. If the
+browser does not open automatically, visit http://localhost:5042. Close another
+copy using that address before launching again.
+
+For a manual start from the project folder:
 
 ```powershell
 dotnet restore

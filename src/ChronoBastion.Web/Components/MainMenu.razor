@@ -1,11 +1,11 @@
 <section class="main-menu">
     <div class="menu-copy"><p class="eyebrow">A FANTASY TOWER DEFENCE</p>
-        <h1>Every road<br />needs a <em>guardian.</em></h1>
-        <p class="intro">From the whispering woods to the Ironthorn Keep.<br />Raise your defences. Make your stand.</p>
+        <h1>Defend the<br /><em>old road.</em></h1>
+        <p class="intro">Protect three regions against 39 waves of enemies.</p>
         @if (CanContinue) { <button class="primary play" disabled="@(!Ready)" @onclick="OnContinue">Continue journey →</button><p class="save-note">@SaveLabel</p> }
-        <button class="@(CanContinue ? "wide new-journey" : "primary play")" disabled="@(!Ready)" @onclick="OnPlay">@(Ready ? "New journey →" : "Preparing the realm…")</button>
+        <button class="@(CanContinue ? "wide new-journey" : "primary play")" disabled="@(!Ready)" @onclick="OnPlay">@(Ready ? "New journey →" : "Loading game…")</button>
         <button class="text-button" @onclick="OnHelp">How to play</button>
-        <div class="record"><span>YOUR BEST JOURNEY</span><strong>@RecordLabel</strong><small>One life. Three regions. A kingdom to protect.</small></div>
+        <div class="record"><span>BEST COMPLETED RUN</span><strong>@RecordLabel</strong><small>Saved in this browser.</small></div>
     </div>
     <div class="menu-art" aria-hidden="true">
 <div class="menu-landscape"><svg viewBox="0 0 600 500">

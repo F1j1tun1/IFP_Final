@@ -67,7 +67,7 @@ module.exports = async function mechanics(browser, url, observe, report) {
     observe(other);
     await other.goto(url);
     await other.getByText(/Journey storage is in use/).waitFor({ timeout: 60000 });
-    assert.equal(await other.getByRole("button", { name: "Preparing the realm…" }).isDisabled(), true);
+    assert.equal(await other.getByRole("button", { name: "Loading game…" }).isDisabled(), true);
     const before = await p.evaluate(key => localStorage.getItem(key), runKey);
     assert.equal(await other.evaluate(async () => {
         const module = await import("./js/browser.js");

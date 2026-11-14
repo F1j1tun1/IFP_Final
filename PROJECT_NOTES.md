@@ -1,16 +1,12 @@
-# Thornwatch team handoff
+# Thornwatch project notes
 
-Integration branch: `feat/thornwatch`, draft PR #2. Mechanics branch:
-`feat/campaign-mechanics`. Keep the integration in draft until the combined game
-and the integrated visual revision have been reviewed.
-
-## Ownership
+## Team contributions
 
 - **Ainabek Chingiskhan / Chingiskhan07:** cartoon sprites, maps, menu, HUD,
   tower controls, responsive interaction and the campaign integration foundation.
 - **Yerkingali Saruar / F1j1tun1:** enemy abilities, economy, automatic waves,
-  save consistency and their engine/browser tests, followed by the approved map
-  and interface revision. The tower and enemy sprite atlases are unchanged.
+  save consistency and their engine/browser tests, followed by the map
+  and interface revision.
 
 Three illustrated maps now have curved roads and aligned build sites. Region
 colours carry through the menu and dialogs; a new journey returns to the forest.
@@ -62,7 +58,7 @@ troll 15 and War Chief 80. Scores and tower attack stats are unchanged.
 More expensive upgrades compete with extra coverage. Full travel refunds let the
 player rebuild for a new map without losing a fraction of the entire army twice.
 
-Legal deterministic simulations give these results with the current numbers:
+The simulator produces these results using normal game commands and resources:
 
 | Strategy | Result | Gate health | Gold left |
 | --- | --- | ---: | ---: |
@@ -73,8 +69,8 @@ Legal deterministic simulations give these results with the current numbers:
 | Three initial towers, no upgrades | Lose, wave 13 | 0 | 1097 |
 | No defence | Lose, wave 3 | 0 | 323 |
 
-These are fixed policies, not proof of an optimal or universally difficult game.
-The opening deliberately remains forgiving; human playtesting is still needed.
+These fixed strategies do not measure how difficult players will find the game.
+The opening is forgiving; further balance changes need human playtesting.
 Run the simulator's `balance` mode for per-wave resource and tower-level data.
 
 ## Save ownership
@@ -89,15 +85,13 @@ Version 1 attempts are not migrated because prices and combat rules changed.
 The existing best-record key is retained. Saves are local, not tamper-proof, and
 crashes can lose up to the two-second autosave interval. There is no cloud sync.
 
-## Verification and integration
+## Verification and deployment
 
 Run `scripts/Test.ps1`, `scripts/Publish-Pages.ps1` and `scripts/Test-Browser.ps1`.
 The browser suite uses the published `/IFP_Final/` build, ordinary player controls,
 all 39 waves, loss/restart, countdown interruptions, two-tab conflicts and storage
 failure. Reports and screenshots stay in ignored `artifacts/`; viewport emulation
-does not constitute testing on a physical phone. Inspect the boss fight as well.
+does not constitute testing on a physical phone.
 
-Open the mechanics PR against `feat/thornwatch`; do not force-push or merge main.
-After integrating both contributors' work and the visual revision, run the full
-checks again. Publishing requires Pages to use GitHub Actions and the Deploy Pages
-workflow to run from the final tested main commit.
+Publishing requires Pages to use GitHub Actions and the Deploy Pages workflow
+to run from a tested main commit. See [README](README.md#publish) for setup.

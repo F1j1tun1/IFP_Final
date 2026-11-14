@@ -69,14 +69,14 @@ public sealed class CommandTests
     {
         var state = TestGame.Apply(GameEngine.NewGame() with { Gold = 500 }, new GameCommand.BuildTower(1, TowerKind.Pulse));
         var upgraded = TestGame.Apply(state, new GameCommand.UpgradeTower(1));
-        Assert.Equal(335, upgraded.Gold);
+        Assert.Equal(300, upgraded.Gold);
         Assert.Equal(2, upgraded.Towers[0].Level);
-        Assert.Equal(165, upgraded.Towers[0].InvestedGold);
+        Assert.Equal(200, upgraded.Towers[0].InvestedGold);
         Assert.Equal(1, state.Towers[0].Level);
 
-        var poor = state with { Gold = 74 };
+        var poor = state with { Gold = 109 };
         Assert.Equal(GameErrorCode.InsufficientGold, TestGame.Error(poor, new GameCommand.UpgradeTower(1)).Code);
-        Assert.Equal(74, poor.Gold);
+        Assert.Equal(109, poor.Gold);
         Assert.Equal(1, poor.Towers[0].Level);
         Assert.Equal(GameErrorCode.TowerNotFound, TestGame.Error(state, new GameCommand.UpgradeTower(2)).Code);
     }
@@ -91,12 +91,12 @@ public sealed class CommandTests
     }
 
     [Fact]
-    public void Selling_refunds_seventy_percent_of_all_investment_and_frees_the_pad()
+    public void Selling_refunds_half_of_all_investment_and_frees_the_pad()
     {
         var state = TestGame.Apply(GameEngine.NewGame(), new GameCommand.BuildTower(1, TowerKind.Pulse));
         state = TestGame.Apply(state, new GameCommand.UpgradeTower(1));
         var sold = TestGame.Apply(state, new GameCommand.SellTower(1));
-        Assert.Equal(250, sold.Gold);
+        Assert.Equal(200, sold.Gold);
         Assert.Empty(sold.Towers);
         Assert.Single(TestGame.Apply(sold, new GameCommand.BuildTower(1, TowerKind.Frost)).Towers);
         Assert.Equal(GameErrorCode.TowerNotFound, TestGame.Error(sold, new GameCommand.SellTower(1)).Code);

@@ -28,7 +28,8 @@ public sealed record Enemy(
     double MaxHealth,
     double Distance,
     double SlowMultiplier = 1,
-    int SlowTicks = 0);
+    int SlowTicks = 0,
+    int AbilityTicks = 0);
 
 public sealed record Spawn(int AtTick, EnemyKind Kind);
 
@@ -49,12 +50,16 @@ public sealed record GameState
     public int NextEnemyId { get; init; } = 1;
     public int NextSpawnIndex { get; init; }
     public bool IsPaused { get; init; }
+    public bool AutoWaves { get; init; }
+    public int AutoWaveTicksRemaining { get; init; }
     public int SpeedMultiplier { get; init; } = 1;
     public ImmutableArray<Tower> Towers { get; init; } = [];
     public ImmutableArray<Enemy> Enemies { get; init; } = [];
     public ImmutableArray<Spawn> Schedule { get; init; } = [];
     public bool IsFinished => Phase is GamePhase.Won or GamePhase.Lost;
     public int PendingEnemies => Schedule.Length - NextSpawnIndex;
+    public bool HasCountdown => Phase == GamePhase.Planning && AutoWaveTicksRemaining > 0;
+    public bool CanAdvance => !IsPaused && (Phase == GamePhase.Combat || HasCountdown);
 }
 
 public static class GameRules
@@ -67,9 +72,12 @@ public static class GameRules
     public const double TickSeconds = 1.0 / TicksPerSecond;
     public const int VictoryBonus = 1000;
     public const int HealthBonus = 50;
+    public const int AutoWaveDelayTicks = 5 * TicksPerSecond;
+    public const int RegionBonus = 75;
 
-    public static int WaveGold(int wave) => 30 + wave * 5;
+    public static int WaveGold(int wave) => 10 + wave - (Math.Min(3, (wave - 1) / 12 + 1) - 1) * 12;
     public static int WaveScore(int wave) => wave * 100;
-    public static int SellRefund(Tower tower) => tower.InvestedGold * 70 / 100;
-    public static double HealthMultiplier(int wave) => 1 + (wave - 1) * 0.1;
+    public static int SellRefund(Tower tower) => tower.InvestedGold / 2;
+    public static int TravelRefund(Tower tower) => tower.InvestedGold;
+    public static double HealthMultiplier(int wave) => 1 + (wave - 1) * 0.12;
 }

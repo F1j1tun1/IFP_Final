@@ -2,7 +2,7 @@
     <div class="menu-copy"><p class="eyebrow">A FANTASY TOWER DEFENCE</p>
         <h1>Every road<br />needs a <em>guardian.</em></h1>
         <p class="intro">From the whispering woods to the Ironthorn Keep.<br />Raise your defences. Make your stand.</p>
-        @if (CanContinue) { <button class="primary play" @onclick="OnContinue">Continue journey →</button><p class="save-note">@SaveLabel · resumes paused</p> }
+        @if (CanContinue) { <button class="primary play" disabled="@(!Ready)" @onclick="OnContinue">Continue journey →</button><p class="save-note">@SaveLabel</p> }
         <button class="@(CanContinue ? "wide new-journey" : "primary play")" disabled="@(!Ready)" @onclick="OnPlay">@(Ready ? "New journey →" : "Preparing the realm…")</button>
         <button class="text-button" @onclick="OnHelp">How to play</button>
         <div class="record"><span>YOUR BEST JOURNEY</span><strong>@RecordLabel</strong><small>One life. Three regions. A kingdom to protect.</small></div>

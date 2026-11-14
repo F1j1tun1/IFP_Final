@@ -8,6 +8,15 @@ namespace ChronoBastion.Web.Tests;
 public sealed class ComponentTests : BunitContext
 {
     [Fact]
+    public void PausedCountdownNamesItsActualResumeAction()
+    {
+        var state = new GameState { AutoWaves = true, AutoWaveTicksRemaining = 40, IsPaused = true };
+        var cut = Render<GameBoard>(p => p.Add(c => c.State, state));
+        Assert.Contains("COUNTDOWN PAUSED", cut.Find(".pause-label").TextContent);
+        Assert.Contains("Resume countdown", cut.Find(".pause-label").TextContent);
+    }
+
+    [Fact]
     public void BoardRendersEnemiesAndPadsWithOverlappingIds()
     {
         var session = new GameSession();
@@ -89,6 +98,7 @@ public sealed class ComponentTests : BunitContext
     public void MaximumTowerHasNoUpgradeAction()
     {
         var session = new GameSession();
+        Assert.True(session.Restore(SavedRuns.Serialize(new GameState { Gold = 1000 })).IsSuccess);
         session.Dispatch(new GameCommand.BuildTower(2, TowerKind.Pulse));
         session.Dispatch(new GameCommand.UpgradeTower(2));
         session.Dispatch(new GameCommand.UpgradeTower(2));

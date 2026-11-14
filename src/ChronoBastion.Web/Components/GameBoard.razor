@@ -48,7 +48,7 @@
             }
         </g>
     </svg>
-    @if (State.IsPaused) { <div class="pause-label">BATTLE PAUSED <small>Choose Resume when ready</small></div> }
+    @if (State.IsPaused) { <div class="pause-label">@(State.HasCountdown ? "COUNTDOWN PAUSED" : "BATTLE PAUSED") <small>Choose @(State.HasCountdown ? "Resume countdown" : "Resume") when ready</small></div> }
 </div>
 @code {
     [Parameter, EditorRequired] public GameState State { get; set; } = default!;

@@ -7,7 +7,7 @@ Defend the Whispering Wood, Ashfall Village and the Ironthorn Keep through
 Yerkingali Saruar and Ainabek Chingiskhan, IT-2502.
 
 The current integration is a draft. See [team handoff](TEAM_HANDOFF.md) for the
-agreed interface/engine ownership and the remaining ability work.
+agreed ownership, implemented mechanics and integration checks.
 
 ## Run
 
@@ -25,12 +25,16 @@ The same commands work on Windows, Linux and macOS.
 
 - Choose **New journey**, select a numbered clearing and build a defender.
 - **Archer** fires quickly at one enemy. **Catapult** hits groups. **Frost mage**
-  slows enemies. Each has three upgrades with a different appearance.
-- Start every wave manually. Build, upgrade, sell for 70% of investment, or
+  slows enemies. Each has three levels with a different appearance.
+- Start waves manually or enable **Auto waves** (off by default). After clearing
+  a wave, it counts down five real seconds. Pause freezes the countdown; switching
+  Auto waves off cancels it. x2 only accelerates combat. A new region always waits
+  for a manual start. Enabling the option does not start an idle wave immediately.
+- Build, upgrade, sell for 50% of investment, or
   select First / Strongest / Nearest targeting, including while paused.
 - **Pause / Resume** stops combat. **x1 / x2** changes battle speed.
 - After the forest and village, **Travel to next region** carries your remaining
-  health and gold, sells the old towers at their normal refund and adds 150 gold.
+  health and gold, refunds the full investment in old towers and adds 75 gold.
   Each new map has ten fixed clearings. Build its defences from scratch.
 - Clear all 39 waves and the War Chief to win. If the gate falls anywhere,
   the entire attempt ends. A new journey starts in the forest with 300 gold
@@ -39,8 +43,10 @@ The same commands work on Windows, Linux and macOS.
 On phones, tap the board or the large numbered buttons below it. On keyboards,
 Tab moves focus and Enter/Space selects a clearing. The field manual explains
 all fourteen enemies. Wolves and runners are fast; armored enemies resist damage;
-the War Chief is the final siege enemy. Special abilities are assigned to the
-engine teammate in TEAM_HANDOFF.md and are not yet enabled in this draft. All enemies,
+the War Chief summons three goblins every six battle seconds. Shamans heal up to
+three wounded allies within 110 world units every four battle seconds, restoring
+12% of each target's maximum health. They cannot heal themselves, dead units or
+the War Chief. All enemies,
 including wraiths, follow the road and can be hit by all tower types.
 
 **Sound on/off** enables original synthesized bow, stone, ice and event cues.
@@ -51,6 +57,8 @@ It starts off and only activates after a click. There are no external audio file
 **Save & menu** pauses and retains the current attempt. **Continue journey**
 restores its towers, enemies, resources and wave progress; combat resumes only
 when you choose Resume. Opening the manual or hiding the tab also pauses combat.
+Between waves, those actions cancel the countdown; choose Start wave on return.
+Loading a save never starts a wave automatically. Ability timers are preserved.
 
 A versioned snapshot is kept ready in memory after each update. Browser storage
 is written after player actions, every two seconds, and on visibility/page-hide
@@ -62,6 +70,12 @@ Data stays in this browser and origin. Corrupt or unavailable storage produces a
 warning without stopping gameplay. The save codec validates phases, map progress,
 wave schedules, entities, finite values and size before loading. It is a local
 convenience feature, not a tamper-proof leaderboard. Keep one active game tab.
+Only one tab can own journey storage. A second tab cannot start or overwrite an
+attempt; close the first tab and reload the second to continue. Unexpected changes
+from another tab stop gameplay and saving until reload. Browsers without Web Locks
+can play without saving; use HTTPS or localhost for persistence.
+Campaign snapshots now use version 2. Earlier Thornwatch attempts cannot be resumed
+after the balance change; existing best records are retained.
 Old Chrono Bastion records use a separate key and are not imported into this campaign.
 
 ## Verify
@@ -82,6 +96,13 @@ checks saves/reloads between maps, a live battle reload, defeat/restart, corrupt
 and blocked storage, keyboard/touch controls and responsive layouts. Allow about
 15–20 minutes. Screenshots and reports go to `artifacts/`; phone viewports are
 emulated. CI runs Windows/Linux .NET checks and Chromium plus Firefox on Linux.
+
+Run `dotnet run --project tools/ChronoBastion.Simulator -- balance` to compare mixed,
+archer-only, catapult-heavy, poor-placement, fixed three-tower and undefended runs.
+All spending uses ordinary game commands. `artifacts/balance.csv` records income,
+spending, travel refunds/bonus, reserve gold, tower levels and health after every wave.
+Poor placement fills pads with the least road coverage first, using the same tower
+mix; the fixed defence never adds to or upgrades its initial three towers.
 
 ## Publish
 

@@ -58,7 +58,7 @@ public sealed class ContentTests
             Assert.True(tower.AtLevel(3).Damage > tower.AtLevel(2).Damage);
             Assert.True(tower.AtLevel(2).Damage > tower.AtLevel(1).Damage);
         });
-        Assert.Equal(35 * 1.9, EnemyCatalog.Spawn(EnemyKind.Grunt, 1, 10).MaxHealth, 6);
+        Assert.Equal(35 * 2.08, EnemyCatalog.Spawn(EnemyKind.Grunt, 1, 10).MaxHealth, 6);
     }
 
     [Theory]

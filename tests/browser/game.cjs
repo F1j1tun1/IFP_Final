@@ -3,9 +3,10 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { chromium, firefox } = require("playwright");
 const { serve } = require("./server.cjs");
+const mechanics = require("./mechanics.cjs");
 const url = process.env.GAME_URL || "http://127.0.0.1:5080/IFP_Final/";
 const key = "thornwatch.high-score.v1",
-    runKey = "thornwatch.run.v1";
+    runKey = "thornwatch.run.v2";
 const screenshots = path.resolve("artifacts/screenshots");
 const report = [],
     failures = [];
@@ -67,16 +68,16 @@ async function controls(browser) {
     await button(p, /^Archer/).dblclick();
     assert.equal(await number(p, "gold"), 210);
     await button(p, /^Upgrade/).click();
-    assert.equal(await number(p, "gold"), 135);
+    assert.equal(await number(p, "gold"), 100);
     await p.locator("#priority").selectOption("Strongest");
     await button(p, /^Upgrade/).click();
-    await text(p, ".max-level", "Max level");
+    await text(p, "[role=alert]", "Not enough gold");
     await pad(p, 5).click();
     await button(p, /^Catapult/).click();
     await text(p, "[role=alert]", "Not enough gold");
     await pad(p, 2).click();
     await button(p, /^Sell/).click();
-    assert.equal(await number(p, "gold"), 214);
+    assert.equal(await number(p, "gold"), 200);
     await fresh(p);
     await pad(p, 2).click();
     await button(p, /^Archer/).click();
@@ -324,10 +325,10 @@ async function victory(browser) {
                 const expected =
                     old.Gold +
                     old.Towers.reduce(
-                        (sum, t) => sum + Math.floor(t.InvestedGold * 0.7),
+                        (sum, t) => sum + t.InvestedGold,
                         0,
                     ) +
-                    150;
+                    75;
                 assert.equal(await number(p, "gold"), expected);
                 assert.equal(
                     await p.locator('.pad[aria-label$="empty"]').count(),
@@ -381,6 +382,7 @@ async function victory(browser) {
         browser = await chromium.launch({ headless: true });
         report.push(`Chromium ${browser.version()}`);
         if (process.env.TEST_MODE !== "victory") await controls(browser);
+        if (process.env.TEST_MODE !== "victory") await mechanics(browser, url, observe, report);
         if (process.env.TEST_MODE !== "controls") await victory(browser);
         if (!process.env.TEST_MODE) {
             await loss(browser);

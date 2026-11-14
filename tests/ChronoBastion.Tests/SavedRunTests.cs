@@ -58,4 +58,14 @@ public sealed class SavedRunTests
     public void Malformed_saves_are_nonfatal(string json) => Assert.False(SavedRuns.Parse(json).IsSuccess);
     [Fact]
     public void Oversized_saves_are_rejected() => Assert.False(SavedRuns.Parse(new string('x', 131073)).IsSuccess);
+
+    [Fact]
+    public void Missing_or_invalid_timers_and_previous_versions_are_rejected()
+    {
+        var json = SavedRuns.Serialize(Battle());
+        Assert.False(SavedRuns.Parse(json.Replace("\"AbilityTicks\":0", "\"OldTimer\":0")).IsSuccess);
+        Assert.False(SavedRuns.Parse(json.Replace("\"AbilityTicks\":0", "\"AbilityTicks\":120")).IsSuccess);
+        Assert.False(SavedRuns.Parse(json.Replace("\"Version\":2", "\"Version\":1")).IsSuccess);
+        Assert.False(SavedRuns.Parse(json.Replace("\"AutoWaveTicksRemaining\":0", "\"AutoWaveTicksRemaining\":100")).IsSuccess);
+    }
 }

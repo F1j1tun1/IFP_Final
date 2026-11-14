@@ -6,8 +6,8 @@ Defend the Whispering Wood, Ashfall Village and the Ironthorn Keep through
 
 Yerkingali Saruar and Ainabek Chingiskhan, IT-2502.
 
-The current integration is a draft. See [team handoff](TEAM_HANDOFF.md) for the
-agreed ownership, implemented mechanics and integration checks.
+See [project notes](PROJECT_NOTES.md) for team contributions, game rules and
+balance results.
 
 ## Run
 
@@ -29,8 +29,7 @@ dotnet restore
 dotnet run --project src/ChronoBastion.Web --launch-profile http
 ```
 
-Open http://localhost:5042. Keep the terminal open while playing; Ctrl+C stops it.
-The same commands work on Windows, Linux and macOS.
+The manual commands also work on Linux and macOS.
 
 ## Play
 
@@ -57,8 +56,8 @@ all fourteen enemies. Wolves and runners are fast; armored enemies resist damage
 the War Chief summons three goblins every six battle seconds. Shamans heal up to
 three wounded allies within 110 world units every four battle seconds, restoring
 12% of each target's maximum health. They cannot heal themselves, dead units or
-the War Chief. All enemies,
-including wraiths, follow the road and can be hit by all tower types.
+the War Chief. All enemies, including wraiths, follow the road and can be hit by
+all tower types.
 
 **Sound on/off** enables original synthesized bow, stone, ice and event cues.
 It starts off and only activates after a click. There are no external audio files.
@@ -80,7 +79,7 @@ finished-run record remains. Confirming a new journey replaces the old attempt.
 Data stays in this browser and origin. Corrupt or unavailable storage produces a
 warning without stopping gameplay. The save codec validates phases, map progress,
 wave schedules, entities, finite values and size before loading. It is a local
-convenience feature, not a tamper-proof leaderboard. Keep one active game tab.
+convenience feature, not a tamper-proof leaderboard.
 Only one tab can own journey storage. A second tab cannot start or overwrite an
 attempt; close the first tab and reload the second to continue. Unexpected changes
 from another tab stop gameplay and saving until reload. Browsers without Web Locks
@@ -121,8 +120,8 @@ mix; the fixed defence never adds to or upgrades its initial three towers.
 `Publish-Pages.ps1` generates static files in `artifacts/pages/wwwroot`, with the
 `/IFP_Final/` base path. Select **Settings > Pages > Source > GitHub Actions** as
 the repository owner, then run **Deploy Pages** from main after green checks.
-The intended URL is https://f1j1tun1.github.io/IFP_Final/ . It is not considered
-verified until deployment and live-site tests succeed.
+The Pages URL is https://f1j1tun1.github.io/IFP_Final/. Deployment to this address
+has not been verified.
 
 ## Source and assets
 
@@ -132,14 +131,11 @@ verified until deployment and live-site tests succeed.
 - `tests/`: engine, component, persistence and browser tests.
 - `tools/ChronoBastion.Simulator`: complete legal winning and losing scenarios.
 
-Existing project/namespace names are retained for compatibility; the game is
-branded Thornwatch. The original functional engine was extended for the agreed
-campaign. Combat still runs in C#, never JavaScript.
+The game is called Thornwatch; project and namespace names still use
+`ChronoBastion`. Combat rules run in C#.
 
-The two sprite atlases in `wwwroot/art` are original project artwork based on the
-approved character sheets. The three illustrated maps are in `wwwroot/art/maps`;
-the interface uses SVG/CSS and system fonts. Menus remember the last region,
-gate health stays red, and gold amounts have coin icons. Sound cues are synthesized
-in `browser.js`. No third-party game assets,
-paid services, accounts, database or API keys are required.
+Tower and enemy sprites are in `wwwroot/art`; the three map images are in
+`wwwroot/art/maps`. The interface uses SVG, CSS and system fonts. Sound cues are
+synthesized in `browser.js`. The game needs no paid services, accounts, database
+or API keys.
 Course reference: Alex Yagur, *Functional Programming with C#* (Packt, 2024).

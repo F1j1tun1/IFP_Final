@@ -23,7 +23,7 @@
                 </nav>
                 <div class="battle-toolbar"><div class="wave-brief">
                     @if (Session.State.Phase == GamePhase.Planning) { <strong>@PlanningLabel</strong><span>@UpcomingWave</span> }
-                    else if (Session.State.Phase == GamePhase.StageCleared) { <strong>Road secured. The journey continues.</strong><span>Your remaining health and gold travel with you.</span> }
+                    else if (Session.State.Phase == GamePhase.StageCleared) { <strong>Region cleared.</strong><span>Your remaining health and gold travel with you.</span> }
                     else { <strong>@(Session.State.IsPaused ? "Defenders on hold" : "Protect the gate")</strong><span>@Session.State.Enemies.Length active · @Session.State.PendingEnemies incoming</span> }
                 </div><div class="battle-actions">
                     @if (Session.State.Phase == GamePhase.Planning) { <button class="primary" @onclick="() => Dispatch(new GameCommand.StartWave())">Start wave @(Session.State.WaveInStage + 1) →</button> }
@@ -40,20 +40,20 @@
         @if (browserWarning is not null) { <p role="status" class="storage-warning">@browserWarning</p> }
         @if (storageConflict) { <button @onclick="Reload">Reload journey</button> }
     </main>
-    <footer><span>THORNWATCH</span><span>THREE REGIONS. ONE JOURNEY. YOUR DEFENCE.</span></footer>
+    <footer><span>THORNWATCH</span><span>3 REGIONS · 39 WAVES</span></footer>
 </div>
 @if (help) { <HelpDialog OnClose="() => help = false" /> }
 @if (confirmation)
 {
     <div class="modal-backdrop"><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-title" tabindex="-1" data-dialog>
-        <p class="eyebrow">LEAVE THIS JOURNEY BEHIND</p><h2 id="confirm-title">Begin again?</h2><p>Your saved attempt will be replaced. Start in the forest with <CoinIcon />300 gold and <HealthIcon />20 gate health. Your best record stays.</p>
+        <p class="eyebrow">RESTART JOURNEY</p><h2 id="confirm-title">Begin again?</h2><p>Your saved attempt will be replaced. Start in the forest with <CoinIcon />300 gold and <HealthIcon />20 gate health. Your best record stays.</p>
         <button class="primary wide" @onclick="NewGame">Restart from the forest</button><button class="wide" @onclick="() => confirmation = false">Keep this journey</button>
     </section></div>
 }
 @if (!menu && Session.State.Phase == GamePhase.StageCleared && !help && !confirmation)
 {
     <div class="modal-backdrop"><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="chapter-title" tabindex="-1" data-dialog>
-        <p class="eyebrow">CHAPTER @Session.State.StageNumber COMPLETE</p><h2 id="chapter-title">The road is yours.</h2><p>Next: @Campaign.Get(Session.State.StageNumber + 1).Name</p>
+        <p class="eyebrow">CHAPTER @Session.State.StageNumber COMPLETE</p><h2 id="chapter-title">Region complete</h2><p>Next: @Campaign.Get(Session.State.StageNumber + 1).Name</p>
         <dl class="stats"><div><dt>Health carried</dt><dd class="health-value"><HealthIcon />@Session.State.CoreHealth / 20</dd></div><div><dt>Tower travel refund</dt><dd class="money"><CoinIcon />+@Session.State.Towers.Sum(GameRules.TravelRefund) gold</dd></div><div><dt>Region reward</dt><dd class="money"><CoinIcon />+@GameRules.RegionBonus gold</dd></div></dl>
         <p>Your defenders return home. Build a new line on the next map.</p><button class="primary wide" @onclick="() => Dispatch(new GameCommand.NextStage())">Travel to next region →</button><button class="wide" @onclick="ShowMenu">Save &amp; menu</button>
     </section></div>
@@ -90,7 +90,7 @@
     private string PlanningLabel => Session.State.HasCountdown
         ? $"Next wave in {(Session.State.AutoWaveTicksRemaining + GameRules.TicksPerSecond - 1) / GameRules.TicksPerSecond}s{(Session.State.IsPaused ? " · paused" : "") }"
         : $"Wave {Session.State.WaveInStage + 1} approaching";
-    private string RecordLabel => Records.Record.Match(r => $"{r.Score.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)} points · {r.WavesCleared}/39 waves", () => "Your legend begins here");
+    private string RecordLabel => Records.Record.Match(r => $"{r.Score.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)} points · {r.WavesCleared}/39 waves", () => "No completed runs yet");
     private string UpcomingWave => string.Join(" · ", WavePlanner.Schedule(Session.State.WaveNumber + 1).GroupBy(s => s.Kind).Select(g => $"{g.Count()} {EnemyCatalog.Get(g.Key).Name}"));
 
     protected override void OnInitialized() => Session.Updated += Updated;

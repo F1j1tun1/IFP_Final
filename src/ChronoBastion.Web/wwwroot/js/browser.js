@@ -195,3 +195,14 @@ export async function disposeAudio() {
     if (audio) await audio.close();
     audio = null;
 }
+
+export function readRegion() {
+    try {
+        const stage = Number(localStorage.getItem("thornwatch.region"));
+        return stage >= 1 && stage <= 3 && Number.isInteger(stage) ? stage : 1;
+    } catch { return 1; }
+}
+
+export function rememberRegion(stage) {
+    try { localStorage.setItem("thornwatch.region", String(stage)); } catch {}
+}

@@ -17,11 +17,11 @@
         </select>
         @if (GameQueries.UpgradePrice(tower).Match<int?>(p => p, () => null) is int price)
         {
-            <button class="primary wide" @onclick="() => OnCommand.InvokeAsync(new GameCommand.UpgradeTower(pad))">Upgrade · @price gold</button>
-            @if (State.Gold < price) { <p class="hint">Need @(price - State.Gold) more gold.</p> }
+            <button class="primary wide" @onclick="() => OnCommand.InvokeAsync(new GameCommand.UpgradeTower(pad))">Upgrade · <span class="money"><CoinIcon />@price gold</span></button>
+            @if (State.Gold < price) { <p class="hint">Need <CoinIcon />@(price - State.Gold) more gold.</p> }
         }
         else { <p class="max-level">Max level reached</p> }
-        <button class="wide" @onclick="() => OnCommand.InvokeAsync(new GameCommand.SellTower(pad))">Sell · +@GameRules.SellRefund(tower) gold</button>
+        <button class="wide" @onclick="() => OnCommand.InvokeAsync(new GameCommand.SellTower(pad))">Sell · <span class="money"><CoinIcon />+@GameRules.SellRefund(tower) gold</span></button>
     }
     else
     {
@@ -30,9 +30,9 @@
         {
             var price = definition.AtLevel(1).Price;
             <button class="build-card @definition.Kind.ToString().ToLowerInvariant()" @onclick="() => OnCommand.InvokeAsync(new GameCommand.BuildTower(pad, definition.Kind))">
-                <UnitSprite Tower="definition.Kind" Size="64" /><span><strong>@definition.Name</strong><b>@price <small>G</small></b></span>
+                <UnitSprite Tower="definition.Kind" Size="64" /><span><strong>@definition.Name</strong><b class="money"><CoinIcon />@price<span class="sr-only"> gold</span></b></span>
                 <small>@definition.Description</small>
-                @if (State.Gold < price) { <em>Need @(price - State.Gold) more gold</em> }
+                @if (State.Gold < price) { <em>Need <CoinIcon />@(price - State.Gold) more gold</em> }
             </button>
         }
     }

@@ -8,25 +8,22 @@
         <div class="record"><span>YOUR BEST JOURNEY</span><strong>@RecordLabel</strong><small>One life. Three regions. A kingdom to protect.</small></div>
     </div>
     <div class="menu-art" aria-hidden="true">
-        <svg viewBox="0 0 500 500">
-            <path d="M40 95Q250-30 460 90L485 360Q270 510 25 370Z" fill="#365c43" stroke="#65834f" stroke-width="3"/>
-            <path d="M70 370H190V240H330V110H440" fill="none" stroke="#263f30" stroke-width="69" stroke-linejoin="round"/>
-            <path d="M70 370H190V240H330V110H440" fill="none" stroke="#bfa06a" stroke-width="57" stroke-linejoin="round"/>
-            <path d="M80 90l-35 85h70ZM410 260l-38 95h76ZM90 195l-28 70h56Z" fill="#254837" stroke="#8a9f58" stroke-width="3"/>
-            <UnitSprite Tower="TowerKind.Pulse" Level="3" X="55" Y="240" Size="130" />
-            <UnitSprite Tower="TowerKind.Frost" Level="3" X="215" Y="105" Size="125" />
-            <UnitSprite Tower="TowerKind.Mortar" Level="2" X="315" Y="345" Size="120" />
-            <UnitSprite Enemy="EnemyKind.Grunt" X="210" Y="210" Size="62" />
-            <UnitSprite Enemy="EnemyKind.Wolf" X="150" Y="280" Size="65" />
-            <circle cx="414" cy="99" r="34" fill="#dcc681" stroke="#2c4433" stroke-width="4"/><path d="M394 114V82h10v8h20v-8h10v32Z" fill="#3d6144"/>
-        </svg><span class="art-caption">THE WHISPERING WOOD <b>CHAPTER I</b></span>
+<div class="menu-landscape"><svg viewBox="0 0 600 500">
+            <image href="@RegionArt.Map(Stage)" width="600" height="500" preserveAspectRatio="xMaxYMid slice" />
+            <g class="menu-guardian"><UnitSprite Tower="TowerKind.Pulse" Level="3" X="72" Y="210" Size="104" /></g>
+            <g class="menu-guardian"><UnitSprite Tower="TowerKind.Frost" Level="3" X="294" Y="145" Size="100" /></g>
+            <g class="menu-guardian"><UnitSprite Tower="TowerKind.Mortar" Level="2" X="414" Y="345" Size="96" /></g>
+            <UnitSprite Enemy="EnemyKind.Grunt" X="180" Y="365" Size="46" />
+            <UnitSprite Enemy="EnemyKind.Wolf" X="345" Y="280" Size="46" />
+        </svg></div><span class="art-caption">@Campaign.Get(Stage).Name.ToUpperInvariant() <b>CHAPTER @(Stage == 1 ? "I" : Stage == 2 ? "II" : "III")</b></span>
     </div>
 </section>
 <div class="chapter-cards">
     @foreach (var chapter in Campaign.Chapters)
-    { <article><span>@(chapter.Number.ToString("00")) / @chapter.Waves WAVES</span><h2>@chapter.Name</h2><p>@chapter.Subtitle</p></article> }
+    { <article class="@(chapter.Number == Stage ? "active" : "")"><span>@(chapter.Number.ToString("00")) / @chapter.Waves WAVES</span><h2>@chapter.Name</h2><p>@chapter.Subtitle</p></article> }
 </div>
 @code {
+    [Parameter] public int Stage { get; set; } = 1;
     [Parameter] public bool Ready { get; set; }
     [Parameter] public bool CanContinue { get; set; }
     [Parameter] public string SaveLabel { get; set; } = "Journey saved";

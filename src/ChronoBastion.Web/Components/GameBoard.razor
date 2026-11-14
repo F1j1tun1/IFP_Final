@@ -1,10 +1,6 @@
 <div class="battlefield">
     <svg class="board" viewBox="0 0 @BastionMap.Width @BastionMap.Height" aria-label="Battlefield with ten build pads">
         <MapScenery Stage="State.StageNumber" />
-        <polyline points="@PathPoints" fill="none" stroke="#26352c" stroke-width="65" stroke-linejoin="round" />
-        <polyline points="@PathPoints" fill="none" stroke="@(State.StageNumber == 1 ? "#b69a60" : State.StageNumber == 2 ? "#9d9381" : "#8b7b6e")" stroke-width="56" stroke-linejoin="round" />
-        <polyline points="@PathPoints" fill="none" stroke="#e2cd9c" stroke-opacity=".35" stroke-width="2" stroke-dasharray="6 17" />
-        <g transform="translate(914 @N(Map.Path[^1].Y-40))" class="gate"><path d="M0 80V8H12V0H24V8H36V0H48V80Z" fill="#d5c9a2" stroke="#28382f" stroke-width="4"/><path d="M12 80V45Q24 25 36 45V80" fill="#455749"/><path d="M8 14H40" stroke="#f4dc89" stroke-width="5"/></g>
         @if (SelectedPad is int selected && State.Towers.FirstOrDefault(t => t.PadId == selected) is { } selectedTower)
         {
             var p = Map.Pads.First(p => p.Id == selected).Position;
@@ -15,14 +11,22 @@
             var tower = State.Towers.FirstOrDefault(t => t.PadId == pad.Id);
             <g @key="pad.Id" transform="translate(@N(pad.Position.X) @N(pad.Position.Y))" class="pad @(SelectedPad == pad.Id ? "selected" : "") @(tower?.Kind.ToString().ToLowerInvariant())" role="button" tabindex="0" aria-label="Pad @pad.Id: @(tower is null ? "empty" : $"{TowerCatalog.Get(tower.Kind).Name} level {tower.Level}")" aria-pressed="@(SelectedPad == pad.Id)" @onclick="() => OnSelect.InvokeAsync(pad.Id)" @onkeydown="e => SelectKey(e, pad.Id)">
                 <circle r="54" fill="transparent" class="hit-area" />
-                <circle r="29" class="socket" />
-                <circle r="23" class="socket-inner" />
                 @if (tower is null)
-                { <g><text y="6" text-anchor="middle" class="pad-number">@pad.Id</text></g> }
+                {
+                    <ellipse cy="5" rx="33" ry="19" fill="#17221ab0" />
+                    <path d="M-32 0c0-11 14-20 32-20S32-11 32 0v6c0 11-14 18-32 18S-32 17-32 6Z" fill="#666452" stroke="#363b2e" stroke-width="2" />
+                    <ellipse rx="32" ry="19" class="socket" />
+                    <ellipse rx="25" ry="13" class="socket-inner" />
+                    <path d="m-24-12 6 5m-13 9 7-1m12 15 3-5m31-20-6 4m13 15-7-3m-20-22v6m5 28-2-6" fill="none" stroke="#555743" stroke-width="2" />
+                    <g><text y="6" text-anchor="middle" class="pad-number">@pad.Id</text></g>
+                }
                 else
                 {
-                    <UnitSprite Tower="tower.Kind" Level="tower.Level" X="-45" Y="-45" Size="90" />
-                    <g><text y="43" text-anchor="middle" class="tower-level">@pad.Id · L@(tower.Level)</text></g>
+                    <ellipse cy="8" rx="31" ry="10" class="unit-shadow" />
+                    <ellipse cy="8" rx="46" ry="25" class="tower-selection" />
+                    <UnitSprite Tower="tower.Kind" Level="tower.Level" X="-41" Y="-56" Size="82" />
+                    <rect x="-23" y="22" width="46" height="17" rx="4" class="tower-tag" />
+                    <g><text y="34" text-anchor="middle" class="tower-level">@pad.Id · L@(tower.Level)</text></g>
                 }
             </g>
         }
@@ -34,7 +38,7 @@
                 @{ var size = enemy.Kind == EnemyKind.Boss ? 78 : enemy.Kind is EnemyKind.Troll or EnemyKind.Ent ? 64 : 46; }
                 <g transform="rotate(@N(Map.HeadingAt(enemy.Distance)))"><UnitSprite Enemy="enemy.Kind" X="@(-size/2)" Y="@(-size/2)" Size="size" /></g>
                 <rect x="-17" y="-31" width="34" height="5" fill="#07101b" stroke="none" />
-                <rect x="-17" y="-31" width="@N(34 * enemy.Health / enemy.MaxHealth)" height="5" fill="#fba376" stroke="none" />
+                <rect x="-17" y="-31" width="@N(34 * enemy.Health / enemy.MaxHealth)" height="5" fill="#e94b51" stroke="none" />
             </g>
         }
         <g class="effects" pointer-events="none">
@@ -47,6 +51,7 @@
                 <circle @key="burst.Id" cx="@N(burst.Position.X)" cy="@N(burst.Position.Y)" r="18" class="burst" />
             }
         </g>
+        <GateHealth Stage="State.StageNumber" Health="State.CoreHealth" />
     </svg>
     @if (State.IsPaused) { <div class="pause-label">@(State.HasCountdown ? "COUNTDOWN PAUSED" : "BATTLE PAUSED") <small>Choose @(State.HasCountdown ? "Resume countdown" : "Resume") when ready</small></div> }
 </div>
@@ -58,6 +63,5 @@
     [Parameter] public IReadOnlyList<BurstEffect> Bursts { get; set; } = [];
     private static string N(double value) => value.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
     private BattleMap Map => Campaign.Get(State.StageNumber).Map;
-    private string PathPoints => string.Join(" ", Map.Path.Select(p => $"{N(p.X)},{N(p.Y)}"));
     private Task SelectKey(KeyboardEventArgs e, int pad) => e.Key is "Enter" or " " ? OnSelect.InvokeAsync(pad) : Task.CompletedTask;
 }

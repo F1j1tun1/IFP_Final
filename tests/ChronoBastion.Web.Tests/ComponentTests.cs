@@ -1,12 +1,33 @@
 using Bunit;
 using ChronoBastion.Application;
 using ChronoBastion.Core.Model;
+using ChronoBastion.Core;
+using ChronoBastion.Core.Content;
 using ChronoBastion.Web.Components;
 
 namespace ChronoBastion.Web.Tests;
 
 public sealed class ComponentTests : BunitContext
 {
+    [Theory]
+    [InlineData(1, "forest")]
+    [InlineData(2, "village")]
+    [InlineData(3, "keep")]
+    public void GateHealthUpdatesWhenAnEnemyEscapes(int stage, string art)
+    {
+        var state = new GameState { StageNumber = stage, WaveNumber = (stage - 1) * 12 + 1,
+            Phase = GamePhase.Combat, Enemies = [EnemyCatalog.Spawn(EnemyKind.Grunt, 1, 1) with { Distance = Campaign.Get(stage).Map.Length - .01 }],
+            Schedule = [new(10000, EnemyKind.Grunt)] };
+        var cut = Render<GameBoard>(p => p.Add(c => c.State, state));
+        Assert.Equal($"art/maps/{art}.png", cut.Find(".map-scenery").GetAttribute("href"));
+        Assert.Equal("Gate health: 20 of 20", cut.Find(".gate-health").GetAttribute("aria-label"));
+        var damaged = GameEngine.Tick(state).State;
+        cut.Render(p => p.Add(c => c.State, damaged));
+        Assert.Equal(19, damaged.CoreHealth);
+        Assert.Equal("Gate health: 19 of 20", cut.Find(".gate-health").GetAttribute("aria-label"));
+        Assert.Equal("width:95%", cut.Find(".hp-fill").GetAttribute("style"));
+    }
+
     [Fact]
     public void PausedCountdownNamesItsActualResumeAction()
     {

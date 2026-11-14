@@ -2,6 +2,7 @@ using ChronoBastion.Application;
 using ChronoBastion.Core;
 using ChronoBastion.Core.Content;
 using ChronoBastion.Core.Model;
+using ChronoBastion.Core.Functional;
 
 namespace ChronoBastion.Tests;
 
@@ -65,7 +66,30 @@ public sealed class SavedRunTests
         var json = SavedRuns.Serialize(Battle());
         Assert.False(SavedRuns.Parse(json.Replace("\"AbilityTicks\":0", "\"OldTimer\":0")).IsSuccess);
         Assert.False(SavedRuns.Parse(json.Replace("\"AbilityTicks\":0", "\"AbilityTicks\":120")).IsSuccess);
-        Assert.False(SavedRuns.Parse(json.Replace("\"Version\":2", "\"Version\":1")).IsSuccess);
+        Assert.False(SavedRuns.Parse(json.Replace("\"Version\":3", "\"Version\":1")).IsSuccess);
         Assert.False(SavedRuns.Parse(json.Replace("\"AutoWaveTicksRemaining\":0", "\"AutoWaveTicksRemaining\":100")).IsSuccess);
+    }
+
+    [Theory]
+    [InlineData(1, 1650)]
+    [InlineData(2, 1700)]
+    [InlineData(3, 1730)]
+    public void Previous_maps_preserve_enemy_progress_and_tower_investment(int stage, double oldLength)
+    {
+        var state = new GameState { StageNumber = stage, WaveNumber = (stage - 1) * 12, WavesCleared = (stage - 1) * 12 };
+        state = TestGame.Apply(state, new GameCommand.BuildTower(2, TowerKind.Pulse));
+        state = TestGame.Apply(state, new GameCommand.StartWave());
+        state = GameEngine.Tick(state).State;
+        state = state with { Enemies = [state.Enemies[0] with { Distance = oldLength * .65 }] };
+        var json = SavedRuns.Serialize(state).Replace("\"Version\":3", "\"Version\":2");
+        var restored = Assert.IsType<Result<GameState, string>.Success>(SavedRuns.Parse(json)).Value;
+        Assert.Equal(.65, restored.Enemies[0].Distance / Campaign.Get(stage).Map.Length, 10);
+        Assert.Equal<Tower>(state.Towers, restored.Towers);
+        Assert.Equal(state.Gold, restored.Gold);
+        Assert.Equal(state.CoreHealth, restored.CoreHealth);
+        Assert.Equal(state.Enemies[0].AbilityTicks, restored.Enemies[0].AbilityTicks);
+        Assert.True(SavedRuns.Parse(SavedRuns.Serialize(restored)).IsSuccess);
+        var invalid = state with { Enemies = [state.Enemies[0] with { Distance = oldLength }] };
+        Assert.False(SavedRuns.Parse(SavedRuns.Serialize(invalid).Replace("\"Version\":3", "\"Version\":2")).IsSuccess);
     }
 }

@@ -1,6 +1,6 @@
 <div class="hud" aria-label="Run statistics">
-    <div><span>Gate health</span><strong data-testid="health">@State.CoreHealth <small>/ @GameRules.StartingHealth</small></strong></div>
-    <div><span>Gold</span><strong class="gold" data-testid="gold">@State.Gold</strong></div>
+    <div><span>Gate health</span><strong class="health-value" data-testid="health"><HealthIcon />@State.CoreHealth <small>/ @GameRules.StartingHealth</small></strong><div class="hud-mini-health" aria-hidden="true"><i style="width:@(State.CoreHealth * 100 / GameRules.StartingHealth)%"></i></div></div>
+    <div><span>Gold</span><strong class="gold" data-testid="gold"><CoinIcon />@State.Gold</strong></div>
     <div><span>Wave</span><strong data-testid="wave">@State.WaveInStage <small>/ @State.StageWaves</small></strong></div>
     <div><span>Score</span><strong data-testid="score">@State.Score.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)</strong></div>
 </div>

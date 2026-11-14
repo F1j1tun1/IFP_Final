@@ -1,0 +1,11 @@
+<foreignObject x="@N(Anchor.X - 61)" y="@N(Anchor.Y - 15)" width="122" height="30" class="gate-anchor">
+    <div xmlns="http://www.w3.org/1999/xhtml" class="gate-health" role="img" aria-label="Gate health: @Health of @GameRules.StartingHealth">
+        <HealthIcon /><div class="hp-track"><span class="hp-fill" style="width:@(Health * 100 / GameRules.StartingHealth)%"></span><b>@Health / @GameRules.StartingHealth</b></div>
+    </div>
+</foreignObject>
+@code {
+    [Parameter] public int Stage { get; set; } = 1;
+    [Parameter] public int Health { get; set; }
+    private (double X, double Y) Anchor => RegionArt.Gate(Stage);
+    private static string N(double value) => value.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
+}

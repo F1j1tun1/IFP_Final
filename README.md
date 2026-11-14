@@ -74,8 +74,9 @@ Only one tab can own journey storage. A second tab cannot start or overwrite an
 attempt; close the first tab and reload the second to continue. Unexpected changes
 from another tab stop gameplay and saving until reload. Browsers without Web Locks
 can play without saving; use HTTPS or localhost for persistence.
-Campaign snapshots now use version 2. Earlier Thornwatch attempts cannot be resumed
-after the balance change; existing best records are retained.
+Campaign snapshots use version 3. Version 2 saves are migrated to the illustrated
+maps: enemies retain their percentage of road travelled, and towers retain their
+pad numbers and upgrades. Version 1 attempts cannot be resumed; best records remain.
 Old Chrono Bastion records use a separate key and are not imported into this campaign.
 
 ## Verify
@@ -125,7 +126,9 @@ branded Thornwatch. The original functional engine was extended for the agreed
 campaign. Combat still runs in C#, never JavaScript.
 
 The two sprite atlases in `wwwroot/art` are original project artwork based on the
-approved character sheets. Maps and interface use original SVG/CSS and system
-fonts. Sound cues are synthesized in `browser.js`. No third-party game assets,
+approved character sheets. The three illustrated maps are in `wwwroot/art/maps`;
+the interface uses SVG/CSS and system fonts. Menus remember the last region,
+gate health stays red, and gold amounts have coin icons. Sound cues are synthesized
+in `browser.js`. No third-party game assets,
 paid services, accounts, database or API keys are required.
 Course reference: Alex Yagur, *Functional Programming with C#* (Packt, 2024).

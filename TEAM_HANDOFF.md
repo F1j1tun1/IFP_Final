@@ -2,15 +2,21 @@
 
 Integration branch: `feat/thornwatch`, draft PR #2. Mechanics branch:
 `feat/campaign-mechanics`. Keep the integration in draft until the combined game
-and the separately planned visual revision have been reviewed.
+and the integrated visual revision have been reviewed.
 
 ## Ownership
 
 - **Ainabek Chingiskhan / Chingiskhan07:** cartoon sprites, maps, menu, HUD,
   tower controls, responsive interaction and the campaign integration foundation.
 - **Yerkingali Saruar / F1j1tun1:** enemy abilities, economy, automatic waves,
-  save consistency and their engine/browser tests. The current request excludes
-  the visual redesign; existing artwork, CSS and map layouts are unchanged.
+  save consistency and their engine/browser tests, followed by the approved map
+  and interface revision. The tower and enemy sprite atlases are unchanged.
+
+Three illustrated maps now have curved roads and aligned build sites. Region
+colours carry through the menu and dialogs; a new journey returns to the forest.
+Gate health is red in the HUD and above the gate. Currency amounts use coin icons.
+Save version 3 migrates version 2 enemies by their fraction of the road travelled;
+tower pad IDs, upgrades, resources and ability timers are retained.
 
 ## Implemented mechanics
 
@@ -27,7 +33,7 @@ War Chief. Healing cannot exceed maximum health. Other shamans are valid allies.
 Tick order: scheduled spawns, tower attacks, surviving casters' abilities,
 movement/death rewards, defeat, then wave completion. A caster killed by a tower
 cannot act that tick. All time is measured in simulation ticks and the incoming
-immutable state is preserved. Save version 2 stores and validates ability timers.
+immutable state is preserved. Saved runs store and validate ability timers.
 
 Auto waves defaults to Off. If enabled when a wave ends, the existing clock runs
 a five-second countdown. Pause freezes it; x2 affects combat only. Disabling the
@@ -60,16 +66,13 @@ Legal deterministic simulations give these results with the current numbers:
 
 | Strategy | Result | Gate health | Gold left |
 | --- | --- | ---: | ---: |
-| Mixed defence | Win, wave 39 | 20 | 1640 |
+| Mixed defence | Win, wave 39 | 20 | 1592 |
 | Catapult-heavy | Win, wave 39 | 20 | 698 |
-| Archers only | Lose, wave 39 | 0 | 2035 |
-| Least road coverage first | Lose, wave 39 | 0 | 1523 |
-| Three initial towers, no upgrades | Lose, wave 12 | 0 | 948 |
+| Archers only | Lose, wave 39 | 0 | 1999 |
+| Least road coverage first | Lose, wave 39 | 0 | 1463 |
+| Three initial towers, no upgrades | Lose, wave 13 | 0 | 1097 |
 | No defence | Lose, wave 3 | 0 | 323 |
 
-The original draft's mixed simulation ended with 15085 gold before abilities.
-Using the same old economy with the new abilities leaves 15553. The current mixed
-run gets its first level-three tower at wave 13 and finishes upgrading at wave 36.
 These are fixed policies, not proof of an optimal or universally difficult game.
 The opening deliberately remains forgiving; human playtesting is still needed.
 Run the simulator's `balance` mode for per-wave resource and tower-level data.

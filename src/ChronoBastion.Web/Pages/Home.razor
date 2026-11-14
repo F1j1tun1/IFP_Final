@@ -4,12 +4,13 @@
 @inject BrowserHighScoreStore Records
 @inject IJSRuntime JS
 <PageTitle>Thornwatch</PageTitle>
+<div class="game-theme theme-@RegionArt.Key(region)" data-region="@RegionArt.Key(region)">
 <div class="app-shell">
     <header class="topbar"><button class="brand" aria-label="Thornwatch home" @onclick="ShowMenu"><span class="brand-mark">♜</span> THORN<span>WATCH</span></button><span class="edition">GUARDIANS OF THE OLD ROAD</span><div class="header-actions"><button aria-pressed="@sound" @onclick="ToggleSound">Sound @(sound ? "on" : "off")</button><button @onclick="OpenHelp">Field manual</button></div></header>
     <main>
         @if (menu)
         {
-            <MainMenu Ready="@(ready && !storageConflict)" CanContinue="hasRun" SaveLabel="@SaveLabel" RecordLabel="@RecordLabel" OnPlay="RequestNew" OnContinue="Continue" OnHelp="OpenHelp" />
+            <MainMenu Stage="region" Ready="@(ready && !storageConflict)" CanContinue="hasRun" SaveLabel="@SaveLabel" RecordLabel="@RecordLabel" OnPlay="RequestNew" OnContinue="Continue" OnHelp="OpenHelp" />
         }
         else
         {
@@ -31,7 +32,7 @@
                     <button disabled="@Session.State.IsFinished" aria-pressed="@Session.State.AutoWaves" @onclick="() => Dispatch(new GameCommand.SetAutoWaves(!Session.State.AutoWaves))">Auto waves: @(Session.State.AutoWaves ? "On" : "Off")</button>
                     <button disabled="@(Session.State.IsFinished || Session.State.Phase == GamePhase.StageCleared)" aria-label="Speed x@(Session.State.SpeedMultiplier)" @onclick="() => Dispatch(new GameCommand.SetSpeed(Session.State.SpeedMultiplier == 1 ? 2 : 1))">×@Session.State.SpeedMultiplier</button>
                 </div></div>
-                <p class="announcement" role="status">@notice</p>
+                <p class="announcement" role="status">@if (notice.Contains("gold", StringComparison.OrdinalIgnoreCase)) { <CoinIcon /> }@notice</p>
                 <div class="secondary-actions"><button @onclick="RequestNew">Restart journey</button><button @onclick="ShowMenu">Save &amp; menu</button><span>@saveStatus</span></div>
             </section><TowerPanel State="Session.State" SelectedPad="selectedPad" OnCommand="Dispatch" Error="@error" /></div>
         }
@@ -45,7 +46,7 @@
 @if (confirmation)
 {
     <div class="modal-backdrop"><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-title" tabindex="-1" data-dialog>
-        <p class="eyebrow">LEAVE THIS JOURNEY BEHIND</p><h2 id="confirm-title">Begin again?</h2><p>Your saved attempt will be replaced. Start in the forest with 300 gold and 20 gate health. Your best record stays.</p>
+        <p class="eyebrow">LEAVE THIS JOURNEY BEHIND</p><h2 id="confirm-title">Begin again?</h2><p>Your saved attempt will be replaced. Start in the forest with <CoinIcon />300 gold and <HealthIcon />20 gate health. Your best record stays.</p>
         <button class="primary wide" @onclick="NewGame">Restart from the forest</button><button class="wide" @onclick="() => confirmation = false">Keep this journey</button>
     </section></div>
 }
@@ -53,14 +54,16 @@
 {
     <div class="modal-backdrop"><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="chapter-title" tabindex="-1" data-dialog>
         <p class="eyebrow">CHAPTER @Session.State.StageNumber COMPLETE</p><h2 id="chapter-title">The road is yours.</h2><p>Next: @Campaign.Get(Session.State.StageNumber + 1).Name</p>
-        <dl class="stats"><div><dt>Health carried</dt><dd>@Session.State.CoreHealth / 20</dd></div><div><dt>Tower travel refund</dt><dd>+@Session.State.Towers.Sum(GameRules.TravelRefund) gold</dd></div><div><dt>Region reward</dt><dd>+@GameRules.RegionBonus gold</dd></div></dl>
+        <dl class="stats"><div><dt>Health carried</dt><dd class="health-value"><HealthIcon />@Session.State.CoreHealth / 20</dd></div><div><dt>Tower travel refund</dt><dd class="money"><CoinIcon />+@Session.State.Towers.Sum(GameRules.TravelRefund) gold</dd></div><div><dt>Region reward</dt><dd class="money"><CoinIcon />+@GameRules.RegionBonus gold</dd></div></dl>
         <p>Your defenders return home. Build a new line on the next map.</p><button class="primary wide" @onclick="() => Dispatch(new GameCommand.NextStage())">Travel to next region →</button><button class="wide" @onclick="ShowMenu">Save &amp; menu</button>
     </section></div>
 }
 @if (!menu && Session.State.IsFinished && !help && !confirmation)
 { <ResultDialog State="Session.State" RecordLabel="@RecordLabel" OnPlayAgain="NewGame" OnMenu="ShowMenu" /> }
 
+</div>
 @code {
+    private int region = 1;
     private int? selectedPad;
     private string? error, browserWarning;
     private string notice = "Select a clearing and build your first defence.";
@@ -98,6 +101,7 @@
         try
         {
             module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/browser.js");
+            region = await module.InvokeAsync<int>("readRegion");
             reference = DotNetObjectReference.Create(this);
             var storage = await module.InvokeAsync<string>("claimRun", reference);
             if (storage == "conflict") StorageConflict();
@@ -116,9 +120,16 @@
         }
         catch (JSException) { browserWarning = "Browser integration is unavailable. Pause before leaving this tab."; }
         if (disposed) return;
+        if (hasRun) SetRegion(Session.State.StageNumber);
         ready = true;
         loop = RunClockAsync();
         StateHasChanged();
+    }
+    private void SetRegion(int stage)
+    {
+        if (region == stage) return;
+        region = stage;
+        if (module is IJSInProcessObjectReference browser) browser.InvokeVoid("rememberRegion", region);
     }
     private void Select(int pad) { selectedPad = pad; error = null; }
     private void Dispatch(GameCommand command)
@@ -181,6 +192,7 @@
     }
     private void Updated(GameTransition transition)
     {
+        if (hasRun || transition.State.IsFinished) SetRegion(transition.State.StageNumber);
         CacheSave(transition.State);
         foreach (var item in transition.Events)
         {
@@ -199,7 +211,7 @@
                 case GameEvent.WaveCleared cleared: notice = $"Wave cleared. +{cleared.Gold} gold · +{cleared.Points} points."; FlushSave(); break;
                 case GameEvent.StageEntered entered:
                     selectedPad = null; effects.Clear(); bursts.Clear(); error = null;
-                    notice = $"Arrived at {Chapter.Name}. +{entered.Refund} refund and +{entered.Bonus} region reward.";
+                    notice = $"Arrived at {Chapter.Name}. +{entered.Refund} gold refund and +{entered.Bonus} gold region reward.";
                     break;
                 case GameEvent.GameEnded:
                     hasRun = false; FlushSave(); PlaySound(transition.State.Phase == GamePhase.Won ? "win" : "loss");

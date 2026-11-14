@@ -9,11 +9,14 @@ namespace ChronoBastion.Tests;
 public sealed class EnemyAbilityTests
 {
     [Theory]
-    [InlineData(1, 180, 320)]
-    [InlineData(2, 200, 340)]
-    [InlineData(3, 210, 350)]
+    [InlineData(1, 290, 405)]
+    [InlineData(2, 770, 887)]
+    [InlineData(3, 645, 765)]
     public void Healing_uses_world_distance_on_the_current_map(int stage, double casterDistance, double allyDistance)
     {
+        var map = Campaign.Get(stage).Map;
+        Assert.True(allyDistance - casterDistance > EnemyAbilities.HealRadius);
+        Assert.True(map.PositionAt(casterDistance).DistanceSquaredTo(map.PositionAt(allyDistance)) < EnemyAbilities.HealRadius * EnemyAbilities.HealRadius);
         var wave = (stage - 1) * 12 + 1;
         var caster = EnemyCatalog.Spawn(EnemyKind.Shaman, 1, wave) with
             { Distance = casterDistance, AbilityTicks = EnemyAbilities.HealInterval - 1 };

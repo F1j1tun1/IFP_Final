@@ -46,7 +46,7 @@ public sealed class ComponentTests : BunitContext
         session.Advance(TimeSpan.FromMilliseconds(100));
         cut.Render(p => p.Add(c => c.State, session.State));
         Assert.Single(cut.FindAll(".enemy"));
-        Assert.Equal(10, cut.FindAll(".pad").Count);
+        Assert.Equal(Campaign.Get(session.State.StageNumber).Map.Pads.Length, cut.FindAll(".pad").Count);
     }
     [Fact]
     public void HudRendersChangedSessionValues()
@@ -68,7 +68,7 @@ public sealed class ComponentTests : BunitContext
         cut.Find("[aria-label='Pad 2: empty']").Click();
         Assert.Equal(2, selected);
         Assert.Empty(session.State.Towers);
-        Assert.Equal(10, cut.FindAll("[role=button]").Count);
+        Assert.Equal(Campaign.Get(session.State.StageNumber).Map.Pads.Length, cut.FindAll("[role=button]").Count);
     }
 
     [Fact]

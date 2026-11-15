@@ -124,7 +124,12 @@
         }
         catch (JSException) { browserWarning = "Browser integration is unavailable. Pause before leaving this tab."; }
         if (disposed) return;
-        if (hasRun) SetRegion(Session.State.StageNumber);
+        if (hasRun)
+        {
+            SetRegion(Session.State.StageNumber);
+            CacheSave(Session.State);
+            FlushSave();
+        }
         ready = true;
         loop = RunClockAsync();
         StateHasChanged();

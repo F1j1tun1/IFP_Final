@@ -21,11 +21,37 @@ public sealed class MapTests
             Assert.InRange(pad.Position.Y, 56, BastionMap.Height - 40);
             Assert.True(samples.Min(pad.Position.DistanceSquaredTo) >= 60 * 60,
                 $"Region {stage}, pad {pad.Id} crowds the road.");
+            Assert.All(samples, point =>
+            {
+                var body = DistanceToBox(point, pad.Position, -41, -56, 41, 26);
+                var label = DistanceToBox(point, pad.Position, -23, 22, 23, 39);
+                Assert.True(Math.Min(body, label) >= 22,
+                    $"Region {stage}, tower {pad.Id} or its label overlaps the road.");
+            });
             Assert.True(samples.Count(p => pad.Position.DistanceSquaredTo(p) <= range * range) * 2 >= 120,
                 $"Region {stage}, pad {pad.Id} has too little road coverage.");
             Assert.All(map.Pads.Where(other => other.Id != pad.Id), other =>
                 Assert.True(pad.Position.DistanceSquaredTo(other.Position) >= 100 * 100));
         }
+    }
+
+    [Fact]
+    public void Keep_towers_fit_on_the_courtyard_floor_below_the_walls()
+    {
+        foreach (var pad in Campaign.Get(3).Map.Pads)
+        {
+            Assert.InRange(pad.Position.X, 141, 859);
+            Assert.InRange(pad.Position.Y, 196, 391);
+            Assert.True(pad.Position.X + 41 < 620 || pad.Position.Y - 56 >= 205,
+                $"Tower {pad.Id} overlaps the gate wing.");
+        }
+    }
+
+    private static double DistanceToBox(Position point, Position origin, double left, double top, double right, double bottom)
+    {
+        var dx = Math.Max(0, Math.Max(origin.X + left - point.X, point.X - origin.X - right));
+        var dy = Math.Max(0, Math.Max(origin.Y + top - point.Y, point.Y - origin.Y - bottom));
+        return Math.Sqrt(dx * dx + dy * dy);
     }
 
     [Fact]

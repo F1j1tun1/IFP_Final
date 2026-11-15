@@ -13,12 +13,17 @@ public sealed record SimulationReport(GameState FinalState, ImmutableArray<WaveR
 
 public static class DemoScenarios
 {
-    private static readonly (int Pad, TowerKind Kind)[] BuildOrder =
-    [
-        (2, TowerKind.Pulse), (5, TowerKind.Mortar), (6, TowerKind.Frost),
-        (1, TowerKind.Pulse), (9, TowerKind.Mortar), (8, TowerKind.Mortar),
-        (4, TowerKind.Pulse), (7, TowerKind.Frost), (10, TowerKind.Pulse), (3, TowerKind.Mortar)
-    ];
+    private static (int Pad, TowerKind Kind)[] BuildOrder(int stage) => stage switch
+    {
+        1 => [(2, TowerKind.Pulse), (4, TowerKind.Mortar), (5, TowerKind.Frost),
+            (1, TowerKind.Pulse), (7, TowerKind.Mortar), (6, TowerKind.Mortar), (3, TowerKind.Frost)],
+        2 => [(3, TowerKind.Pulse), (4, TowerKind.Mortar), (8, TowerKind.Frost),
+            (2, TowerKind.Pulse), (6, TowerKind.Mortar), (7, TowerKind.Mortar),
+            (1, TowerKind.Pulse), (5, TowerKind.Frost)],
+        _ => [(3, TowerKind.Pulse), (4, TowerKind.Mortar), (5, TowerKind.Frost),
+            (6, TowerKind.Pulse), (7, TowerKind.Mortar), (8, TowerKind.Mortar),
+            (1, TowerKind.Pulse), (2, TowerKind.Frost)]
+    };
 
     public static SimulationReport Run(bool defend) => Run(defend ? "mixed" : "none");
 
@@ -64,13 +69,14 @@ public static class DemoScenarios
 
     private static GameState PrepareDefense(GameState state, string strategy)
     {
+        var buildOrder = BuildOrder(state.StageNumber);
         var order = strategy switch
         {
-            "archers" => BuildOrder.Select(t => (t.Pad, TowerKind.Pulse)).ToArray(),
-            "catapults" => BuildOrder.Select((t, i) => (t.Pad, i == 0 ? TowerKind.Pulse : i == 2 ? TowerKind.Frost : TowerKind.Mortar)).ToArray(),
-            "poor-placement" => WorstPads(state).Select((pad, i) => (pad, BuildOrder[i].Kind)).ToArray(),
-            "no-upgrades" => BuildOrder.Take(3).ToArray(),
-            _ => BuildOrder
+            "archers" => buildOrder.Select(t => (t.Pad, TowerKind.Pulse)).ToArray(),
+            "catapults" => buildOrder.Select((t, i) => (t.Pad, i == 0 ? TowerKind.Pulse : (i == 2 || i == buildOrder.Length - 1) ? TowerKind.Frost : TowerKind.Mortar)).ToArray(),
+            "poor-placement" => WorstPads(state).Select((pad, i) => (pad, buildOrder[i].Kind)).ToArray(),
+            "no-upgrades" => buildOrder.Take(3).ToArray(),
+            _ => buildOrder
         };
         for (var index = 0; index < order.Length; index++)
         {

@@ -46,7 +46,7 @@ The manual commands also work on Linux and macOS.
 - After the forest and village, **Travel to next region** carries your remaining
   gate health. Each region starts with its own budget: **300 gold in the forest,
   450 in the village and 650 in the keep**. Old towers and unspent gold stay behind;
-  there is no travel refund or bonus. Each map has ten clearings. Build a new defence.
+  there is no travel refund or bonus. The forest has seven clearings; the village and keep have eight each. Build a new defence.
 - Clear all 39 waves and the War Chief to win. If the gate falls anywhere,
   the entire attempt ends. A new journey starts in the forest with 300 gold
   and 20 gate health. There is no retry-wave or chapter-select shortcut.
@@ -85,8 +85,9 @@ Only one tab can own journey storage. A second tab cannot start or overwrite an
 attempt; close the first tab and reload the second to continue. Unexpected changes
 from another tab stop gameplay and saving until reload. Browsers without Web Locks
 can play without saving; use HTTPS or localhost for persistence.
-Campaign snapshots use version 4. Older attempts cannot resume after the road and
-economy changes; start a new journey. Best records, the remembered region, combat
+Campaign snapshots use version 5. Version-4 attempts keep their progress and tower
+upgrades on the new layout; removed sites return their full investment once. Versions
+1–3 cannot resume after the earlier road and economy changes. Best records, the remembered region, combat
 speed and auto-wave preferences are retained. Restarting does not erase preferences.
 Old Chrono Bastion records use a separate key and are not imported into this campaign.
 
@@ -116,7 +117,7 @@ spending, new-region budgets, reserve gold, tower levels and health after every 
 Poor placement fills pads with the least road coverage first, using the same tower
 mix; the fixed defence never adds to or upgrades its initial three towers.
 The growing strategies upgrade the first three towers before expanding, then
-upgrade six before filling all ten clearings. Enemy health grows within each region,
+upgrade six before filling the remaining clearings. Enemy health grows within each region,
 with a higher starting multiplier in later regions to match their fresh budgets.
 
 ## Publish

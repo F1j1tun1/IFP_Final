@@ -44,10 +44,11 @@ public sealed class ContentTests
     }
 
     [Fact]
-    public void Content_contains_ten_distinct_pads_and_three_increasing_tower_levels()
+    public void Content_contains_seven_distinct_forest_pads_and_three_increasing_tower_levels()
     {
-        Assert.Equal(10, BastionMap.Pads.Select(p => p.Id).Distinct().Count());
-        Assert.All(BastionMap.Pads, pad =>
+        var pads = Campaign.Get(1).Map.Pads;
+        Assert.Equal(7, pads.Select(p => p.Id).Distinct().Count());
+        Assert.All(pads, pad =>
         {
             Assert.InRange(pad.Position.X, 0, BastionMap.Width);
             Assert.InRange(pad.Position.Y, 0, BastionMap.Height);

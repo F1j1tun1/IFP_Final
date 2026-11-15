@@ -37,7 +37,7 @@ module.exports = async function regions(browser, url, observe, report) {
     assert.equal(await button(legacy.page, "Continue journey →").count(), 0);
     await button(legacy.page, "New journey →").click();
     const fresh = await snapshot(legacy.page);
-    assert.equal(fresh.Version, 4);
+    assert.equal(fresh.Version, 5);
     assert.equal(fresh.State.Gold, 300);
     assert.equal(fresh.State.CoreHealth, 20);
     assert.equal(fresh.State.WaveNumber, 0);
@@ -51,6 +51,31 @@ module.exports = async function regions(browser, url, observe, report) {
     await button(legacy.page, "Speed x2").waitFor();
     assert.equal((await snapshot(legacy.page)).State.WaveNumber, 0);
     await legacy.context.close();
+
+    for (const stage of [1, 2, 3]) {
+        const previous = structuredClone(base);
+        previous.Version = 4;
+        Object.assign(previous.State, {
+            StageNumber: stage, WaveNumber: (stage - 1) * 12, WavesCleared: (stage - 1) * 12,
+            Gold: 100, CoreHealth: 11,
+            Towers: Array.from({ length: 10 }, (_, i) => ({
+                PadId: i + 1, Kind: 0, Level: 3, InvestedGold: 380, CooldownTicks: 0, Priority: 0,
+            })),
+        });
+        const { context, page } = await seeded(previous);
+        await button(page, "Continue journey →").click({ timeout: 60000 });
+        const current = await snapshot(page), count = stage === 1 ? 7 : 8;
+        assert.equal(current.Version, 5);
+        assert.equal(current.State.CoreHealth, 11);
+        assert.equal(current.State.Gold, 100 + (10 - count) * 380);
+        assert.deepEqual(current.State.Towers.map(t => t.PadId), Array.from({ length: count }, (_, i) => i + 1));
+        assert.equal(await page.locator('.pad').count(), count);
+        await page.reload();
+        await button(page, "Continue journey →").click({ timeout: 60000 });
+        assert.equal((await snapshot(page)).State.Gold, current.State.Gold);
+        await context.close();
+    }
+    report.push("Previous layout migrates on all three maps; upgrades and health survive; removed sites refund once");
 
     for (const stage of [1, 2]) {
         const cleared = structuredClone(base);

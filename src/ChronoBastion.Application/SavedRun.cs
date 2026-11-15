@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using ChronoBastion.Core.Content;
@@ -13,7 +14,7 @@ public static class SavedRuns
 {
     public const string StorageKey = "thornwatch.run.v2";
     public static string Serialize(GameState state) =>
-        JsonSerializer.Serialize(new SavedRun(4, state), SavedRunJsonContext.Default.SavedRun);
+        JsonSerializer.Serialize(new SavedRun(5, state), SavedRunJsonContext.Default.SavedRun);
 
     public static Result<GameState, string> Parse(string json)
     {
@@ -34,7 +35,9 @@ public static class SavedRuns
             var saved = JsonSerializer.Deserialize(json, SavedRunJsonContext.Default.SavedRun);
             if (saved is { Version: 2 or 3 })
                 return Result<GameState, string>.Fail("Roads and region budgets have changed. Start a new journey; your best record is kept.");
-            if (saved is not { Version: 4, State: { } state } || !Valid(state)) return Invalid();
+            if (saved is not { Version: 4 or 5, State: { } state } || !Valid(state, saved.Version == 4)) return Invalid();
+            if (saved.Version == 4) state = MoveTowers(state);
+            if (!Valid(state)) return Invalid();
             return Result<GameState, string>.Ok(state);
         }
         catch (Exception error) when (error is JsonException or ArgumentException or InvalidOperationException or OverflowException)
@@ -44,7 +47,23 @@ public static class SavedRuns
     private static Result<GameState, string> Invalid() =>
         Result<GameState, string>.Fail("This saved journey is damaged or from another version. Start a new journey.");
 
-    private static bool Valid(GameState s)
+    private static GameState MoveTowers(GameState state)
+    {
+        int[] pads = state.StageNumber switch
+        {
+            1 => [0, 0, 2, 1, 3, 4, 0, 5, 6, 0, 7],
+            2 => [0, 1, 2, 3, 4, 0, 5, 0, 6, 7, 8],
+            _ => [0, 3, 2, 1, 4, 5, 6, 0, 7, 0, 8]
+        };
+        return state with
+        {
+            Gold = state.Gold + state.Towers.Where(t => pads[t.PadId] == 0).Sum(t => t.InvestedGold),
+            Towers = state.Towers.Where(t => pads[t.PadId] != 0)
+                .Select(t => t with { PadId = pads[t.PadId] }).OrderBy(t => t.PadId).ToImmutableArray()
+        };
+    }
+
+    private static bool Valid(GameState s, bool legacyPads = false)
     {
         if (!Enum.IsDefined(s.Phase) || s.IsFinished || s.StageNumber is < 1 or > 3 ||
             s.CoreHealth is < 1 or > GameRules.StartingHealth || s.Gold is < 0 or > 500000 ||
@@ -54,6 +73,8 @@ public static class SavedRuns
             s.Towers.Length > 10 || s.Enemies.Length > 200 || s.Schedule.Length > 200 ||
             s.Towers.Any(t => t is null) || s.Enemies.Any(e => e is null) || s.Schedule.Any(s => s is null))
             return false;
+        var pads = Campaign.Get(s.StageNumber).Map.Pads;
+        if (!legacyPads && s.Towers.Length > pads.Length) return false;
         var start = (s.StageNumber - 1) * 12;
         var end = start + s.StageWaves;
         if (s.AutoWaveTicksRemaining is < 0 or > GameRules.AutoWaveDelayTicks ||
@@ -79,7 +100,8 @@ public static class SavedRuns
             !s.Towers.Select(t => t.PadId).SequenceEqual(s.Towers.Select(t => t.PadId).Order())) return false;
         foreach (var tower in s.Towers)
         {
-            if (tower.PadId is < 1 or > 10 || !Enum.IsDefined(tower.Kind) || !Enum.IsDefined(tower.Priority) ||
+            if (tower.PadId is < 1 or > 10 || (!legacyPads && !pads.Any(p => p.Id == tower.PadId)) ||
+                !Enum.IsDefined(tower.Kind) || !Enum.IsDefined(tower.Priority) ||
                 tower.Level is < 1 or > 3) return false;
             var catalog = TowerCatalog.Get(tower.Kind);
             if (tower.InvestedGold != catalog.Levels.Take(tower.Level).Sum(l => l.Price) ||

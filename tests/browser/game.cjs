@@ -53,7 +53,7 @@ async function fresh(p) {
     await button(p, "Restart from the forest").click();
     assert.equal(await number(p, "gold"), 300);
     assert.equal(await p.locator(".enemy").count(), 0);
-    assert.equal(await p.locator('.pad[aria-label$="empty"]').count(), 10);
+    assert.equal(await p.locator('.pad[aria-label$="empty"]').count(), 7);
 }
 async function controls(browser) {
     const context = await browser.newContext({
@@ -149,7 +149,7 @@ async function controls(browser) {
             ),
         );
         if (width === 390) {
-            for (let id = 1; id <= 10; id++) {
+            for (let id = 1; id <= 7; id++) {
                 await button(p, `Select pad ${id}`).tap();
             }
             await shot(p, "mobile");
@@ -230,7 +230,7 @@ async function loss(browser, storage) {
         await start(p);
     } else await button(p, "Play again").click();
     assert.equal(await number(p, "gold"), 300);
-    assert.equal(await p.locator('.pad[aria-label$="empty"]').count(), 10);
+    assert.equal(await p.locator('.pad[aria-label$="empty"]').count(), 7);
     await button(p, /^Start wave 1 /).waitFor();
     await button(p, "Speed x1").waitFor();
     report.push(
@@ -248,19 +248,16 @@ async function victory(browser) {
     await ready(p);
     await start(p);
     await button(p, "Speed x1").click();
-    const order = [
-        [2, "Archer"],
-        [5, "Catapult"],
-        [6, "Frost mage"],
-        [1, "Archer"],
-        [9, "Catapult"],
-        [8, "Catapult"],
-        [4, "Archer"],
-        [7, "Frost mage"],
-        [10, "Archer"],
-        [3, "Catapult"],
+    const orders = [
+        [[2, "Archer"], [4, "Catapult"], [5, "Frost mage"], [1, "Archer"],
+            [7, "Catapult"], [6, "Catapult"], [3, "Frost mage"]],
+        [[3, "Archer"], [4, "Catapult"], [8, "Frost mage"], [2, "Archer"],
+            [6, "Catapult"], [7, "Catapult"], [1, "Archer"], [5, "Frost mage"]],
+        [[3, "Archer"], [4, "Catapult"], [5, "Frost mage"], [6, "Archer"],
+            [7, "Catapult"], [8, "Catapult"], [1, "Archer"], [2, "Frost mage"]],
     ];
     for (let stage = 1; stage <= 3; stage++) {
+        const order = orders[stage - 1];
         const waves = stage === 3 ? 15 : 12;
         for (let wave = 1; wave <= waves; wave++) {
             let allBuilt = true;
@@ -340,7 +337,7 @@ async function victory(browser) {
                 assert.equal(await number(p, "gold"), expected);
                 assert.equal(
                     await p.locator('.pad[aria-label$="empty"]').count(),
-                    10,
+                    8,
                 );
                 const current = await p.evaluate(
                     (k) => JSON.parse(localStorage.getItem(k)).State,

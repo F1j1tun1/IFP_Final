@@ -11,9 +11,9 @@
 Three illustrated maps now have curved roads and aligned build sites. Region
 colours carry through the menu and dialogs; a new journey returns to the forest.
 Gate health is red in the HUD and above the gate. Currency amounts use coin icons.
-The roads now follow the illustrated centre lines, with ten reachable clearings on
-each map. Save version 4 starts a fresh attempt after these changes; older attempts
-cannot resume. Best records, speed and auto-wave preferences are retained.
+The roads now follow the illustrated centre lines, with seven clearings in the forest and eight in the village and keep.
+Save version 5 moves version-4 towers to the new sites and fully refunds removed
+sites. Versions 1–3 cannot resume. Best records, speed and auto-wave preferences are retained.
 
 ## Implemented mechanics
 
@@ -64,11 +64,11 @@ The simulator produces these results using normal game commands and resources:
 
 | Strategy | Result | Gate health | Gold left |
 | --- | --- | ---: | ---: |
-| Mixed defence | Win, wave 39 | 14 | 576 |
-| Catapult-heavy | Win, wave 39 | 10 | 611 |
-| Archers only | Lose, wave 30 | 0 | 136 |
-| Least road coverage first | Win, wave 39 | 20 | 572 |
-| Three initial towers, no upgrades | Lose, wave 12 | 0 | 917 |
+| Mixed defence | Win, wave 39 | 16 | 696 |
+| Catapult-heavy | Win, wave 39 | 20 | 580 |
+| Archers only | Lose, wave 31 | 0 | 213 |
+| Least road coverage first | Lose, wave 29 | 0 | 138 |
+| Three initial towers, no upgrades | Lose, wave 11 | 0 | 805 |
 | No defence | Lose, wave 3 | 0 | 323 |
 
 These fixed strategies do not measure how difficult players will find the game.
@@ -87,6 +87,9 @@ saved again. An ended marker cannot be overwritten by a stale participating tab.
 Unsupported/unavailable storage is reported and allows play without saving.
 
 Versions 1-3 are not resumed because roads and regional economy changed.
+Version 4 is migrated to version 5: tower levels are preserved, pad numbers are
+remapped, and removed pads refund their full investment. The migrated snapshot is
+saved immediately so reloading cannot repeat a refund.
 The existing best-record key is retained. Saves are local, not tamper-proof, and
 crashes can lose up to the two-second autosave interval. There is no cloud sync.
 

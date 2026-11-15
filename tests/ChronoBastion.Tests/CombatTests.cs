@@ -55,9 +55,9 @@ public sealed class CombatTests
     [Fact]
     public void Mortar_hits_nearby_enemies_but_not_distant_ones()
     {
-        var enemies = new[] { 100.0, 130.0, 700.0 }.Select((distance, i) =>
+        var enemies = new[] { 300.0, 330.0, 900.0 }.Select((distance, i) =>
             new Enemy(i + 1, EnemyKind.Grunt, 100, 100, distance)).ToArray();
-        var state = TestGame.Apply(TestGame.Combat(enemies), new GameCommand.BuildTower(1, TowerKind.Mortar));
+        var state = TestGame.Apply(TestGame.Combat(enemies), new GameCommand.BuildTower(2, TowerKind.Mortar));
         var tick = GameEngine.Tick(state);
         Assert.Equal(72, tick.State.Enemies[0].Health);
         Assert.Equal(72, tick.State.Enemies[1].Health);
@@ -83,8 +83,8 @@ public sealed class CombatTests
     [Fact]
     public void Cooldown_limits_shots_to_the_configured_interval()
     {
-        var state = TestGame.Combat(new Enemy(1, EnemyKind.Grunt, 1000, 1000, 100));
-        state = TestGame.Apply(state, new GameCommand.BuildTower(1, TowerKind.Pulse));
+        var state = TestGame.Combat(new Enemy(1, EnemyKind.Grunt, 1000, 1000, 350));
+        state = TestGame.Apply(state, new GameCommand.BuildTower(2, TowerKind.Pulse));
         Assert.Single(GameEngine.Tick(state).Events.OfType<GameEvent.ShotFired>());
         state = GameEngine.Tick(state).State;
         for (var tick = 1; tick < 8; tick++)

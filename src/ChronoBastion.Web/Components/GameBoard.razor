@@ -1,5 +1,5 @@
 <div class="battlefield">
-    <svg class="board" viewBox="0 0 @BastionMap.Width @BastionMap.Height" aria-label="Battlefield with ten build pads">
+    <svg class="board" viewBox="0 0 @BastionMap.Width @BastionMap.Height" aria-label="Battlefield with @Map.Pads.Length build pads">
         <MapScenery Stage="State.StageNumber" />
         @if (SelectedPad is int selected && State.Towers.FirstOrDefault(t => t.PadId == selected) is { } selectedTower)
         {

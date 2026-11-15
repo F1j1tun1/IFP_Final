@@ -17,7 +17,7 @@ public sealed class CampaignTests
         Assert.Equal(3, Campaign.Chapters.Select(c => c.Map.Path[0]).Distinct().Count());
         Assert.All(Campaign.Chapters, c =>
         {
-            Assert.Equal(10, c.Map.Pads.Length);
+            Assert.Equal(c.Number == 1 ? 7 : 8, c.Map.Pads.Length);
             Assert.Equal(c.Map.Path[^1], c.Map.PositionAt(double.MaxValue));
             Assert.Throws<ArgumentOutOfRangeException>(() => c.Map.PositionAt(double.NaN));
         });

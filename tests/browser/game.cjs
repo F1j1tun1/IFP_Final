@@ -158,19 +158,24 @@ async function controls(browser) {
     await p.setViewportSize({ width: 1440, height: 1000 });
     await button(p, /^Start wave 1 /).click();
     await p.locator(".enemy").first().waitFor();
+    await button(p, "Pause").click();
     const before = await p.evaluate(
-        (k) => JSON.parse(localStorage.getItem(k)).State.WaveTick,
+        (k) => ({ state: JSON.parse(localStorage.getItem(k)).State, time: performance.now() }),
         runKey,
     );
+    assert.equal(before.state.SpeedMultiplier, 2, "Restart preserves the selected speed");
+    await button(p, "Resume").click();
     await p.waitForTimeout(1100);
     await button(p, "Pause").click();
     const after = await p.evaluate(
-        (k) => JSON.parse(localStorage.getItem(k)).State.WaveTick,
+        (k) => ({ state: JSON.parse(localStorage.getItem(k)).State, time: performance.now() }),
         runKey,
     );
+    const ticks = after.state.WaveTick - before.state.WaveTick;
+    const expectedTicks = (after.time - before.time) / 50 * before.state.SpeedMultiplier;
     assert.ok(
-        after - before >= 10 && after - before <= 40,
-        `one clock after menu cycles: ${after - before}`,
+        ticks >= expectedTicks * 0.6 && ticks <= expectedTicks * 1.4,
+        `one clock at x${before.state.SpeedMultiplier}: ${ticks} ticks, expected about ${expectedTicks.toFixed(1)}`,
     );
     report.push(
         "Controls, keyboard/touch, upgrades/sale/targeting, errors, pause/speed, live save/reload, hidden-tab event, menu cycles, laptop and mobile layouts passed",
@@ -232,7 +237,7 @@ async function loss(browser, storage) {
     assert.equal(await number(p, "gold"), 300);
     assert.equal(await p.locator('.pad[aria-label$="empty"]').count(), 7);
     await button(p, /^Start wave 1 /).waitFor();
-    await button(p, "Speed x1").waitFor();
+    await button(p, "Speed x2").waitFor();
     report.push(
         `Defeat, record and fresh forest restart (${storage || "normal"} storage) passed`,
     );

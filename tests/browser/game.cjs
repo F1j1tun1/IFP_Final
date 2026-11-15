@@ -4,6 +4,7 @@ const path = require("node:path");
 const { chromium, firefox } = require("playwright");
 const { serve } = require("./server.cjs");
 const mechanics = require("./mechanics.cjs");
+const regions = require("./regions.cjs");
 const url = process.env.GAME_URL || "http://127.0.0.1:5080/IFP_Final/";
 const key = "thornwatch.high-score.v1",
     runKey = "thornwatch.run.v2";
@@ -252,7 +253,7 @@ async function victory(browser) {
         [5, "Catapult"],
         [6, "Frost mage"],
         [1, "Archer"],
-        [9, "Archer"],
+        [9, "Catapult"],
         [8, "Catapult"],
         [4, "Archer"],
         [7, "Frost mage"],
@@ -263,7 +264,20 @@ async function victory(browser) {
         const waves = stage === 3 ? 15 : 12;
         for (let wave = 1; wave <= waves; wave++) {
             let allBuilt = true;
-            for (const [id, kind] of order) {
+            for (let index = 0; index < order.length; index++) {
+                if (index === 3 || index === 6) {
+                    for (const [builtId] of order.slice(0, index)) {
+                        const label = await pad(p, builtId).getAttribute("aria-label");
+                        if (!label.endsWith("level 1")) continue;
+                        await pad(p, builtId).click();
+                        const upgrade = button(p, /^Upgrade/);
+                        const price = Number((await upgrade.innerText()).match(/\d+/)[0]);
+                        if ((await number(p, "gold")) < price) { allBuilt = false; break; }
+                        await upgrade.click();
+                    }
+                    if (!allBuilt) break;
+                }
+                const [id, kind] = order[index];
                 if (
                     !(await pad(p, id).getAttribute("aria-label")).endsWith(
                         "empty",
@@ -322,13 +336,7 @@ async function victory(browser) {
                 });
                 await button(p, "Continue journey →").click();
                 await button(p, "Travel to next region →").click();
-                const expected =
-                    old.Gold +
-                    old.Towers.reduce(
-                        (sum, t) => sum + t.InvestedGold,
-                        0,
-                    ) +
-                    75;
+                const expected = stage === 1 ? 450 : 650;
                 assert.equal(await number(p, "gold"), expected);
                 assert.equal(
                     await p.locator('.pad[aria-label$="empty"]').count(),
@@ -368,7 +376,7 @@ async function victory(browser) {
     assert.equal(stored.WavesCleared, 39);
     assert.equal(stored.Won, true);
     report.push(
-        `Complete legal 39-wave victory: ${score} points; both region saves/reloads, resource carryover and final record persisted`,
+        `Complete legal 39-wave victory: ${score} points; both region saves/reloads, fixed budgets, health carryover and final record persisted`,
     );
     console.log(report.at(-1));
     await context.close();
@@ -382,6 +390,7 @@ async function victory(browser) {
         browser = await chromium.launch({ headless: true });
         report.push(`Chromium ${browser.version()}`);
         if (process.env.TEST_MODE !== "victory") await controls(browser);
+        if (process.env.TEST_MODE !== "victory") await regions(browser, url, observe, report);
         if (process.env.TEST_MODE !== "victory") await mechanics(browser, url, observe, report);
         if (process.env.TEST_MODE !== "controls") await victory(browser);
         if (!process.env.TEST_MODE) {

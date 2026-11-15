@@ -10,7 +10,7 @@ public sealed class EnemyAbilityTests
 {
     [Theory]
     [InlineData(1, 290, 405)]
-    [InlineData(2, 770, 887)]
+    [InlineData(2, 920, 1035)]
     [InlineData(3, 645, 765)]
     public void Healing_uses_world_distance_on_the_current_map(int stage, double casterDistance, double allyDistance)
     {
@@ -95,7 +95,7 @@ public sealed class EnemyAbilityTests
     public void A_caster_killed_this_tick_cannot_use_its_ability(EnemyKind kind)
     {
         var caster = Ready(kind, 1, 130) with { Health = 1 };
-        var state = Battle(caster) with { Towers = [new(1, TowerKind.Pulse, 1, 90, 0, TargetPriority.First)] };
+        var state = Battle(caster) with { Towers = [new(3, TowerKind.Pulse, 1, 90, 0, TargetPriority.First)] };
         var result = GameEngine.Tick(state);
         Assert.Empty(result.State.Enemies);
         Assert.Empty(result.Events.OfType<GameEvent.Summoned>());

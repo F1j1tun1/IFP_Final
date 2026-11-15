@@ -28,7 +28,7 @@ public sealed class CampaignTests
     [Theory]
     [InlineData(1, 12)]
     [InlineData(2, 24)]
-    public void Region_transition_preserves_health_and_credits_refund_exactly_once(int stage, int wave)
+    public void Region_transition_preserves_health_and_replaces_old_wealth_with_its_budget(int stage, int wave)
     {
         var state = TestGame.Apply(new GameState { Gold = 500 }, new GameCommand.BuildTower(2, TowerKind.Pulse));
         state = state with
@@ -48,11 +48,15 @@ public sealed class CampaignTests
         Assert.Equal(0, next.WaveInStage);
         Assert.Equal(9, next.CoreHealth);
         Assert.Equal(completed.Score, next.Score);
-        Assert.Equal(completed.Gold + 90 + 75, next.Gold);
+        Assert.Equal(Campaign.Get(stage + 1).StartingGold, next.Gold);
         Assert.Empty(next.Towers);
         Assert.False(GameEngine.Execute(next, new GameCommand.NextStage()).IsSuccess);
         Assert.True(SavedRuns.Parse(SavedRuns.Serialize(completed)).IsSuccess);
         Assert.True(SavedRuns.Parse(SavedRuns.Serialize(next)).IsSuccess);
+        var rich = TestGame.Apply(completed with { Gold = 10000 }, new GameCommand.NextStage());
+        var poor = TestGame.Apply(completed with { Gold = 0, Towers = [] }, new GameCommand.NextStage());
+        Assert.Equal(next.Gold, rich.Gold);
+        Assert.Equal(next.Gold, poor.Gold);
     }
 
     [Fact]

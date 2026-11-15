@@ -206,3 +206,20 @@ export function readRegion() {
 export function rememberRegion(stage) {
     try { localStorage.setItem("thornwatch.region", String(stage)); } catch {}
 }
+
+export function readPreferences() {
+    try {
+        const saved = JSON.parse(localStorage.getItem("thornwatch.preferences"))
+            ?? JSON.parse(localStorage.getItem(runKey))?.State;
+        return {
+            autoWaves: saved?.autoWaves === true || saved?.AutoWaves === true,
+            speedMultiplier: (saved?.speedMultiplier ?? saved?.SpeedMultiplier) === 2 ? 2 : 1,
+        };
+    } catch { return { autoWaves: false, speedMultiplier: 1 }; }
+}
+
+export function rememberPreferences(autoWaves, speedMultiplier) {
+    try {
+        localStorage.setItem("thornwatch.preferences", JSON.stringify({ autoWaves, speedMultiplier }));
+    } catch {}
+}

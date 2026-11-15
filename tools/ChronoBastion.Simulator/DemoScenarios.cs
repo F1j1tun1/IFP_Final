@@ -8,7 +8,7 @@ using ChronoBastion.Core.Rules;
 namespace ChronoBastion.Simulator;
 
 public sealed record WaveReport(int Number, GamePhase Phase, int Health, int Gold, int Score,
-    int Earned, int Spent, int TravelIncome, string Towers);
+    int Earned, int Spent, int RegionBudget, string Towers);
 public sealed record SimulationReport(GameState FinalState, ImmutableArray<WaveReport> Waves, int Ticks);
 
 public static class DemoScenarios
@@ -16,7 +16,7 @@ public static class DemoScenarios
     private static readonly (int Pad, TowerKind Kind)[] BuildOrder =
     [
         (2, TowerKind.Pulse), (5, TowerKind.Mortar), (6, TowerKind.Frost),
-        (1, TowerKind.Pulse), (9, TowerKind.Pulse), (8, TowerKind.Mortar),
+        (1, TowerKind.Pulse), (9, TowerKind.Mortar), (8, TowerKind.Mortar),
         (4, TowerKind.Pulse), (7, TowerKind.Frost), (10, TowerKind.Pulse), (3, TowerKind.Mortar)
     ];
 
@@ -28,15 +28,15 @@ public static class DemoScenarios
         var waves = ImmutableArray.CreateBuilder<WaveReport>();
         var ticks = 0;
         var spent = 0;
-        var travelIncome = 0;
+        var regionBudget = state.Gold;
         var startGold = state.Gold;
         while (!state.IsFinished && ticks < 100000)
         {
             if (state.Phase == GamePhase.StageCleared)
             {
-                var before = state.Gold;
                 state = Apply(state, new GameCommand.NextStage());
-                travelIncome = state.Gold - before;
+                regionBudget = state.Gold;
+                startGold = state.Gold;
             }
             if (state.Phase == GamePhase.Planning)
             {
@@ -51,10 +51,10 @@ public static class DemoScenarios
             if (state.Phase != GamePhase.Combat)
             {
                 waves.Add(new(state.WaveNumber, state.Phase, state.CoreHealth, state.Gold, state.Score,
-                    state.Gold - startGold + spent - travelIncome, spent, travelIncome,
+                    state.Gold - startGold + spent, spent, regionBudget,
                     string.Join(";", state.Towers.Select(t => $"{t.PadId}:{t.Kind}:L{t.Level}"))));
                 startGold = state.Gold;
-                travelIncome = 0;
+                regionBudget = 0;
             }
         }
         if (!state.IsFinished)
@@ -72,8 +72,17 @@ public static class DemoScenarios
             "no-upgrades" => BuildOrder.Take(3).ToArray(),
             _ => BuildOrder
         };
-        foreach (var (pad, kind) in order)
+        for (var index = 0; index < order.Length; index++)
         {
+            if (index is 3 or 6 && strategy != "no-upgrades")
+                foreach (var (builtPad, _) in order.Take(index))
+                {
+                    if (GameQueries.TowerAt(state, builtPad).Match(t => t.Level >= 2, () => false)) continue;
+                    var upgrade = GameEngine.Execute(state, new GameCommand.UpgradeTower(builtPad));
+                    if (upgrade is not Result<GameTransition, GameError>.Success improved) return state;
+                    state = improved.Value.State;
+                }
+            var (pad, kind) = order[index];
             if (GameQueries.TowerAt(state, pad).IsSome)
                 continue;
             var result = GameEngine.Execute(state, new GameCommand.BuildTower(pad, kind));

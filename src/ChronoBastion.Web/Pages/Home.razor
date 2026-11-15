@@ -23,7 +23,7 @@
                 </nav>
                 <div class="battle-toolbar"><div class="wave-brief">
                     @if (Session.State.Phase == GamePhase.Planning) { <strong>@PlanningLabel</strong><span>@UpcomingWave</span> }
-                    else if (Session.State.Phase == GamePhase.StageCleared) { <strong>Region cleared.</strong><span>Your remaining health and gold travel with you.</span> }
+                    else if (Session.State.Phase == GamePhase.StageCleared) { <strong>Region cleared.</strong><span>Carry your gate health into a new region with a fresh gold budget.</span> }
                     else { <strong>@(Session.State.IsPaused ? "Defenders on hold" : "Protect the gate")</strong><span>@Session.State.Enemies.Length active · @Session.State.PendingEnemies incoming</span> }
                 </div><div class="battle-actions">
                     @if (Session.State.Phase == GamePhase.Planning) { <button class="primary" @onclick="() => Dispatch(new GameCommand.StartWave())">Start wave @(Session.State.WaveInStage + 1) →</button> }
@@ -38,6 +38,7 @@
         }
         @if (Records.Warning is { } warning) { <p role="status" class="storage-warning">@warning</p> }
         @if (browserWarning is not null) { <p role="status" class="storage-warning">@browserWarning</p> }
+        @if (restoreWarning is not null) { <p role="status" class="storage-warning">@restoreWarning</p> }
         @if (storageConflict) { <button @onclick="Reload">Reload journey</button> }
     </main>
     <footer><span>THORNWATCH</span><span>3 REGIONS · 39 WAVES</span></footer>
@@ -54,8 +55,8 @@
 {
     <div class="modal-backdrop"><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="chapter-title" tabindex="-1" data-dialog>
         <p class="eyebrow">CHAPTER @Session.State.StageNumber COMPLETE</p><h2 id="chapter-title">Region complete</h2><p>Next: @Campaign.Get(Session.State.StageNumber + 1).Name</p>
-        <dl class="stats"><div><dt>Health carried</dt><dd class="health-value"><HealthIcon />@Session.State.CoreHealth / 20</dd></div><div><dt>Tower travel refund</dt><dd class="money"><CoinIcon />+@Session.State.Towers.Sum(GameRules.TravelRefund) gold</dd></div><div><dt>Region reward</dt><dd class="money"><CoinIcon />+@GameRules.RegionBonus gold</dd></div></dl>
-        <p>Your defenders return home. Build a new line on the next map.</p><button class="primary wide" @onclick="() => Dispatch(new GameCommand.NextStage())">Travel to next region →</button><button class="wide" @onclick="ShowMenu">Save &amp; menu</button>
+        <dl class="stats"><div><dt>Health carried</dt><dd class="health-value"><HealthIcon />@Session.State.CoreHealth / 20</dd></div><div><dt>Next region budget</dt><dd class="money"><CoinIcon />@Campaign.Get(Session.State.StageNumber + 1).StartingGold gold</dd></div></dl>
+        <p>Old towers and unspent gold stay behind. Build a new defence with the next region's budget.</p><button class="primary wide" @onclick="() => Dispatch(new GameCommand.NextStage())">Travel to next region →</button><button class="wide" @onclick="ShowMenu">Save &amp; menu</button>
     </section></div>
 }
 @if (!menu && Session.State.IsFinished && !help && !confirmation)
@@ -65,7 +66,7 @@
 @code {
     private int region = 1;
     private int? selectedPad;
-    private string? error, browserWarning;
+    private string? error, browserWarning, restoreWarning;
     private string notice = "Select a clearing and build your first defence.";
     private string saveStatus = "Autosave ready";
     private bool menu = true, ready, help, confirmation, disposed, hasRun, sound, hidden, storageConflict;
@@ -102,6 +103,9 @@
         {
             module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/browser.js");
             region = await module.InvokeAsync<int>("readRegion");
+            var preferences = await module.InvokeAsync<BrowserPreferences>("readPreferences");
+            Session.Dispatch(new GameCommand.SetAutoWaves(preferences.AutoWaves));
+            Session.Dispatch(new GameCommand.SetSpeed(preferences.SpeedMultiplier));
             reference = DotNetObjectReference.Create(this);
             var storage = await module.InvokeAsync<string>("claimRun", reference);
             if (storage == "conflict") StorageConflict();
@@ -112,9 +116,9 @@
             {
                 var json = await JS.InvokeAsync<string?>("localStorage.getItem", SavedRuns.StorageKey);
                 if (!storageConflict && storage == "ready" && !string.IsNullOrWhiteSpace(json) && json != "ended")
-                    Session.Restore(json).Match(_ => { hasRun = true; return true; }, message => { browserWarning = message; return false; });
+                    Session.Restore(json).Match(_ => { hasRun = true; return true; }, message => { restoreWarning = message; return false; });
                 else if (!storageConflict && json is null && await JS.InvokeAsync<string?>("localStorage.getItem", "thornwatch.run.v1") is { } old && old != "ended")
-                    browserWarning = "The campaign balance has changed. Start a new journey; your best record is kept.";
+                    restoreWarning = "The campaign balance has changed. Start a new journey; your best record is kept.";
             }
             catch (JSException) { browserWarning = "Journey storage is unavailable. Keep this tab open to play; progress cannot be saved."; }
         }
@@ -136,10 +140,23 @@
     {
         if (storageConflict || hidden) return;
         error = Session.Dispatch(command).Match(_ => (string?)null, e => e.Message);
+        if (command is GameCommand.SetAutoWaves or GameCommand.SetSpeed && module is IJSInProcessObjectReference browser)
+            browser.InvokeVoid("rememberPreferences", Session.State.AutoWaves, Session.State.SpeedMultiplier);
         FlushSave();
     }
     private void RequestNew() { if (storageConflict) return; if (hasRun) { Pause(); confirmation = true; } else NewGame(); }
-    private void NewGame() { if (storageConflict) return; hasRun = true; Dispatch(new GameCommand.Restart()); menu = false; }
+    private void NewGame()
+    {
+        if (storageConflict) return;
+        var autoWaves = Session.State.AutoWaves;
+        var speed = Session.State.SpeedMultiplier;
+        hasRun = true;
+        Dispatch(new GameCommand.Restart());
+        Dispatch(new GameCommand.SetAutoWaves(autoWaves));
+        Dispatch(new GameCommand.SetSpeed(speed));
+        menu = false;
+        restoreWarning = null;
+    }
     private void Continue() { if (hasRun && !storageConflict) { menu = false; notice = ResumeInstruction; } }
     private void ShowMenu() { if (!ready) return; Pause(); FlushSave(); menu = true; }
     private void Pause() { if (!Session.State.IsFinished) Session.Dispatch(new GameCommand.Suspend()); }
@@ -211,7 +228,7 @@
                 case GameEvent.WaveCleared cleared: notice = $"Wave cleared. +{cleared.Gold} gold · +{cleared.Points} points."; FlushSave(); break;
                 case GameEvent.StageEntered entered:
                     selectedPad = null; effects.Clear(); bursts.Clear(); error = null;
-                    notice = $"Arrived at {Chapter.Name}. +{entered.Refund} gold refund and +{entered.Bonus} gold region reward.";
+                    notice = $"Arrived at {Chapter.Name}. Your new defence budget is {entered.StartingGold} gold.";
                     break;
                 case GameEvent.GameEnded:
                     hasRun = false; FlushSave(); PlaySound(transition.State.Phase == GamePhase.Won ? "win" : "loss");

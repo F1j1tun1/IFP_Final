@@ -54,13 +54,12 @@ public static class GameEngine
     {
         if (state.Phase != GamePhase.StageCleared || state.StageNumber >= 3)
             return Failure(GameErrorCode.InvalidPhase, "Clear this region before travelling.");
-        var refund = state.Towers.Sum(GameRules.TravelRefund);
-        const int bonus = GameRules.RegionBonus;
+        var chapter = Campaign.Get(state.StageNumber + 1);
         return Success(state with
         {
             StageNumber = state.StageNumber + 1,
             Phase = GamePhase.Planning,
-            Gold = state.Gold + refund + bonus,
+            Gold = chapter.StartingGold,
             Towers = [],
             Enemies = [],
             Schedule = [],
@@ -68,7 +67,7 @@ public static class GameEngine
             WaveTick = 0,
             IsPaused = false
         },
-            new GameEvent.StageEntered(state.StageNumber + 1, refund, bonus));
+            new GameEvent.StageEntered(chapter.Number, chapter.StartingGold));
     }
 
     private static Result<GameTransition, GameError> Build(GameState state, GameCommand.BuildTower build)

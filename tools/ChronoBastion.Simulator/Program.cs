@@ -5,12 +5,12 @@ var scenario = args.FirstOrDefault() ?? "all";
 if (scenario == "balance")
 {
     Directory.CreateDirectory("artifacts");
-    var rows = new List<string> { "Strategy,Wave,Phase,Health,Gold,Earned,Spent,TravelIncome,Towers" };
+    var rows = new List<string> { "Strategy,Wave,Phase,Health,Gold,Earned,Spent,RegionBudget,Towers" };
     foreach (var strategy in new[] { "mixed", "archers", "catapults", "poor-placement", "no-upgrades", "none" })
     {
         var result = DemoScenarios.Run(strategy);
         foreach (var w in result.Waves)
-            rows.Add($"{strategy},{w.Number},{w.Phase},{w.Health},{w.Gold},{w.Earned},{w.Spent},{w.TravelIncome},{w.Towers}");
+            rows.Add($"{strategy},{w.Number},{w.Phase},{w.Health},{w.Gold},{w.Earned},{w.Spent},{w.RegionBudget},{w.Towers}");
         Console.WriteLine($"{strategy}: {result.FinalState.Phase}, wave {result.FinalState.WaveNumber}, health {result.FinalState.CoreHealth}, gold {result.FinalState.Gold}, kills {result.FinalState.Kills}");
     }
     File.WriteAllLines(args.ElementAtOrDefault(1) ?? "artifacts/balance.csv", rows);

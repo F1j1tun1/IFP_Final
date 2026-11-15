@@ -44,8 +44,9 @@ The manual commands also work on Linux and macOS.
   select First / Strongest / Nearest targeting, including while paused.
 - **Pause / Resume** stops combat. **x1 / x2** changes battle speed.
 - After the forest and village, **Travel to next region** carries your remaining
-  health and gold, refunds the full investment in old towers and adds 75 gold.
-  Each new map has ten fixed clearings. Build its defences from scratch.
+  gate health. Each region starts with its own budget: **300 gold in the forest,
+  450 in the village and 650 in the keep**. Old towers and unspent gold stay behind;
+  there is no travel refund or bonus. Each map has ten clearings. Build a new defence.
 - Clear all 39 waves and the War Chief to win. If the gate falls anywhere,
   the entire attempt ends. A new journey starts in the forest with 300 gold
   and 20 gate health. There is no retry-wave or chapter-select shortcut.
@@ -84,9 +85,9 @@ Only one tab can own journey storage. A second tab cannot start or overwrite an
 attempt; close the first tab and reload the second to continue. Unexpected changes
 from another tab stop gameplay and saving until reload. Browsers without Web Locks
 can play without saving; use HTTPS or localhost for persistence.
-Campaign snapshots use version 3. Version 2 saves are migrated to the illustrated
-maps: enemies retain their percentage of road travelled, and towers retain their
-pad numbers and upgrades. Version 1 attempts cannot be resumed; best records remain.
+Campaign snapshots use version 4. Older attempts cannot resume after the road and
+economy changes; start a new journey. Best records, the remembered region, combat
+speed and auto-wave preferences are retained. Restarting does not erase preferences.
 Old Chrono Bastion records use a separate key and are not imported into this campaign.
 
 ## Verify
@@ -111,9 +112,12 @@ emulated. CI runs Windows/Linux .NET checks and Chromium plus Firefox on Linux.
 Run `dotnet run --project tools/ChronoBastion.Simulator -- balance` to compare mixed,
 archer-only, catapult-heavy, poor-placement, fixed three-tower and undefended runs.
 All spending uses ordinary game commands. `artifacts/balance.csv` records income,
-spending, travel refunds/bonus, reserve gold, tower levels and health after every wave.
+spending, new-region budgets, reserve gold, tower levels and health after every wave.
 Poor placement fills pads with the least road coverage first, using the same tower
 mix; the fixed defence never adds to or upgrades its initial three towers.
+The growing strategies upgrade the first three towers before expanding, then
+upgrade six before filling all ten clearings. Enemy health grows within each region,
+with a higher starting multiplier in later regions to match their fresh budgets.
 
 ## Publish
 

@@ -8,10 +8,30 @@ public sealed record BuildPad(int Id, Position Position);
 
 public sealed class BattleMap(ImmutableArray<Position> path, ImmutableArray<BuildPad> pads)
 {
+    private readonly double[] distances = Measure(path);
     public ImmutableArray<Position> Path { get; } = path;
     public ImmutableArray<BuildPad> Pads { get; } = pads;
-    public double Length { get; } = Enumerable.Range(1, path.Length - 1).Sum(i => Math.Sqrt(path[i - 1].DistanceSquaredTo(path[i])));
-    public Position PositionAt(double distance) => BastionMap.Interpolate(Path, Length, distance);
+    public double Length => distances[^1];
+    public Position PositionAt(double distance)
+    {
+        if (!double.IsFinite(distance)) throw new ArgumentOutOfRangeException(nameof(distance));
+        distance = Math.Clamp(distance, 0, Length);
+        var index = Array.BinarySearch(distances, distance);
+        if (index >= 0) return Path[index];
+        var end = ~index;
+        var start = end - 1;
+        var ratio = (distance - distances[start]) / (distances[end] - distances[start]);
+        return new(Path[start].X + (Path[end].X - Path[start].X) * ratio,
+            Path[start].Y + (Path[end].Y - Path[start].Y) * ratio);
+    }
+
+    private static double[] Measure(ImmutableArray<Position> path)
+    {
+        var distances = new double[path.Length];
+        for (var i = 1; i < path.Length; i++)
+            distances[i] = distances[i - 1] + Math.Sqrt(path[i - 1].DistanceSquaredTo(path[i]));
+        return distances;
+    }
     public double HeadingAt(double distance)
     {
         var a = PositionAt(Math.Max(0, distance - 1));

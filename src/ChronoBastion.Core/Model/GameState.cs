@@ -73,11 +73,14 @@ public static class GameRules
     public const int VictoryBonus = 1000;
     public const int HealthBonus = 50;
     public const int AutoWaveDelayTicks = 5 * TicksPerSecond;
-    public const int RegionBonus = 75;
 
     public static int WaveGold(int wave) => 10 + wave - (Math.Min(3, (wave - 1) / 12 + 1) - 1) * 12;
     public static int WaveScore(int wave) => wave * 100;
     public static int SellRefund(Tower tower) => tower.InvestedGold / 2;
-    public static int TravelRefund(Tower tower) => tower.InvestedGold;
-    public static double HealthMultiplier(int wave) => 1 + (wave - 1) * 0.12;
+    public static double HealthMultiplier(int wave)
+    {
+        var region = Math.Min(3, (wave - 1) / 12 + 1);
+        var localWave = wave - (region - 1) * 12;
+        return 1 + (region - 1) * 0.4 + (localWave - 1) * 0.12;
+    }
 }

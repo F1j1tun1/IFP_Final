@@ -11,8 +11,9 @@
 Three illustrated maps now have curved roads and aligned build sites. Region
 colours carry through the menu and dialogs; a new journey returns to the forest.
 Gate health is red in the HUD and above the gate. Currency amounts use coin icons.
-Save version 3 migrates version 2 enemies by their fraction of the road travelled;
-tower pad IDs, upgrades, resources and ability timers are retained.
+The roads now follow the illustrated centre lines, with ten reachable clearings on
+each map. Save version 4 starts a fresh attempt after these changes; older attempts
+cannot resume. Best records, speed and auto-wave preferences are retained.
 
 ## Implemented mechanics
 
@@ -47,29 +48,33 @@ wave. New regions and new journeys always start manually. There is no wave retry
 | Frost mage build / upgrades | 100 / 80 / 130 | 100 / 120 / 190 |
 | Wave reward | 30 + 5 × global wave | 10 + wave within region |
 | Voluntary sale | 70% | 50% |
-| Travel refund | 70% | 100% |
-| Region bonus | 150 | 75 |
-| Health growth per global wave | 10% of base | 12% of base |
+| Starting budget by region | Carried wealth | 300 / 450 / 650 |
+| Travel refund / region bonus | 70% / 150 | None |
+| Enemy health multiplier | Global wave growth | 1.0 / 1.4 / 1.8 at each region's start, then +0.12 per local wave |
 | War Chief base health | 1100 | 900 |
 
 Kill gold is lower: goblin 4, runner/wolf 3, spider 2, orc/wraith 6,
 armored orc 7, shaman/armored skeleton 8, ent 10, skeleton 4, zombie 5,
 troll 15 and War Chief 80. Scores and tower attack stats are unchanged.
-More expensive upgrades compete with extra coverage. Full travel refunds let the
-player rebuild for a new map without losing a fraction of the entire army twice.
+Upgrades compete with extra coverage. A new region replaces all remaining wealth
+and tower investment with its fixed budget. Gate health, score and campaign progress
+carry over. Losing still restarts the entire campaign.
 
 The simulator produces these results using normal game commands and resources:
 
 | Strategy | Result | Gate health | Gold left |
 | --- | --- | ---: | ---: |
-| Mixed defence | Win, wave 39 | 20 | 1592 |
-| Catapult-heavy | Win, wave 39 | 20 | 698 |
-| Archers only | Lose, wave 39 | 0 | 1999 |
-| Least road coverage first | Lose, wave 39 | 0 | 1463 |
-| Three initial towers, no upgrades | Lose, wave 13 | 0 | 1097 |
+| Mixed defence | Win, wave 39 | 14 | 576 |
+| Catapult-heavy | Win, wave 39 | 10 | 611 |
+| Archers only | Lose, wave 30 | 0 | 136 |
+| Least road coverage first | Win, wave 39 | 20 | 572 |
+| Three initial towers, no upgrades | Lose, wave 12 | 0 | 917 |
 | No defence | Lose, wave 3 | 0 | 323 |
 
 These fixed strategies do not measure how difficult players will find the game.
+The growing policies upgrade their first three towers before expanding, then
+upgrade six before filling the map. Every clearing now has usable coverage;
+sorting by coverage alone does not predict the best combat result.
 The opening is forgiving; further balance changes need human playtesting.
 Run the simulator's `balance` mode for per-wave resource and tower-level data.
 
@@ -81,7 +86,7 @@ change from another writer stops the current tab before its cached state can be
 saved again. An ended marker cannot be overwritten by a stale participating tab.
 Unsupported/unavailable storage is reported and allows play without saving.
 
-Version 1 attempts are not migrated because prices and combat rules changed.
+Versions 1-3 are not resumed because roads and regional economy changed.
 The existing best-record key is retained. Saves are local, not tamper-proof, and
 crashes can lose up to the two-second autosave interval. There is no cloud sync.
 

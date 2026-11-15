@@ -2,50 +2,67 @@ using System.Collections.Immutable;
 using ChronoBastion.Core.Model;
 namespace ChronoBastion.Core.Content;
 
-public sealed record Chapter(int Number, string Name, string Subtitle, int Waves, BattleMap Map);
+public sealed record Chapter(int Number, string Name, string Subtitle, int Waves, int StartingGold, BattleMap Map);
 public static class Campaign
 {
     public static ImmutableArray<Chapter> Chapters { get; } =
     [
-        new(1, "The Whispering Wood", "Guard the old forest road", 12, new(
-            Road(new(0,341), new(114,338), new(80,239), new(159,173),
-                new(210,126), new(285,129), new(320,206), new(365,278), new(354,383), new(429,399),
-                new(536,429), new(570,345), new(632,300), new(695,257), new(804,254), new(847,205),
-                new(856,195), new(862,183), new(864,175)),
-            Pads((9,40), (25,44), (25,67), (45,35), (49,55), (49,85), (63,35), (70,62), (80,35), (86,62)))),
-        new(2, "Ashfall Village", "Hold the road through the ruins", 12, new(
-            Road(new(0,267), new(100,267), new(205,239), new(250,300),
-                new(286,343), new(256,394), new(380,399), new(495,410), new(563,380), new(595,326),
-                new(627,276), new(600,201), new(671,178), new(721,155), new(775,196), new(821,164),
-                new(837,154), new(841,141), new(843,130)),
-            Pads((10,40), (20,62), (34,40), (43,62), (43,84), (55,40), (62,84), (76,57), (76,40), (76,74)))),
-        new(3, "The Ironthorn Keep", "Break the War Chief's siege", 15, new(
-            Road(new(0,330), new(130,330), new(112,290), new(140,218),
-                new(157,156), new(180,160), new(264,160), new(348,160), new(400,138), new(421,218),
-                new(452,295), new(364,356), new(440,391), new(486,416), new(590,408), new(647,408),
-                new(731,406), new(735,362), new(760,273), new(776,232), new(790,202), new(807,168)),
-            Pads((10,46), (28,46), (24,66), (36,66), (56,46), (56,66), (56,86), (73,46), (73,86), (90,66))))
+        new(1, "The Whispering Wood", "Guard the old forest road", 12, 300, new(
+            Road(new(0, 341), new(69, 326), new(134, 294), new(166, 254),
+                new(182, 201), new(200, 170), new(227, 152), new(258, 148),
+                new(297, 158), new(331, 190), new(352, 230), new(367, 280),
+                new(383, 323), new(407, 363), new(438, 389), new(477, 405),
+                new(519, 406), new(560, 395), new(600, 368), new(633, 337),
+                new(659, 312), new(698, 285), new(742, 264), new(794, 247),
+                new(831, 226), new(859, 205), new(867, 193)),
+            Pads((96, 237), (254, 238), (290, 350), (430, 175), (495, 315),
+                (495, 475), (590, 265), (670, 395), (700, 205), (830, 335)))),
+        new(2, "Ashfall Village", "Hold the road through the ruins", 12, 450, new(
+            Road(new(0, 273), new(67, 272), new(120, 267), new(167, 262),
+                new(214, 270), new(250, 295), new(272, 331), new(291, 365),
+                new(320, 385), new(347, 390), new(407, 394), new(467, 391),
+                new(524, 385), new(565, 363), new(594, 327), new(612, 284),
+                new(614, 245), new(635, 220), new(650, 195), new(678, 183),
+                new(723, 175), new(768, 174), new(811, 174), new(838, 156), new(845, 140)),
+            Pads((100, 200), (170, 360), (335, 290), (450, 310), (410, 475),
+                (530, 225), (540, 465), (620, 400), (685, 320), (770, 260)))),
+        new(3, "The Ironthorn Keep", "Break the War Chief's siege", 15, 650, new(
+            Road(new(0, 333), new(53, 329), new(90, 319), new(110, 298),
+                new(137, 272), new(142, 230), new(153, 202), new(168, 184),
+                new(186, 169), new(230, 160), new(287, 163), new(343, 163),
+                new(386, 171), new(414, 200), new(426, 238), new(419, 273),
+                new(408, 309), new(402, 341), new(408, 372), new(436, 391),
+                new(469, 408), new(523, 410), new(587, 405), new(653, 408),
+                new(695, 403), new(723, 380), new(747, 354), new(756, 315),
+                new(770, 276), new(792, 243), new(801, 211), new(819, 177)),
+            Pads((320, 100), (230, 250), (170, 365), (332, 330), (500, 255),
+                (570, 335), (540, 480), (660, 260), (690, 480), (845, 330))))
     ];
     public static Chapter Get(int number) => number is >= 1 and <= 3 ? Chapters[number - 1] : throw new ArgumentOutOfRangeException(nameof(number));
 
     private static ImmutableArray<BuildPad> Pads(params (double X, double Y)[] positions) =>
-        positions.Select((p, i) => new BuildPad(i + 1, new(p.X * 9.6, p.Y * 5.4))).ToImmutableArray();
+        positions.Select((p, i) => new BuildPad(i + 1, new(p.X, p.Y))).ToImmutableArray();
 
     private static ImmutableArray<Position> Road(params Position[] points)
     {
         var path = ImmutableArray.CreateBuilder<Position>();
-        for (var segment = 0; segment < points.Length - 1; segment += 3)
+        for (var segment = 0; segment < points.Length - 1; segment++)
         {
-            var a = points[segment]; var b = points[segment + 1];
-            var c = points[segment + 2]; var d = points[segment + 3];
-            for (var step = 0; step < 16; step++)
+            var a = points[Math.Max(0, segment - 1)];
+            var b = points[segment];
+            var c = points[segment + 1];
+            var d = points[Math.Min(points.Length - 1, segment + 2)];
+            for (var step = 0; step < 8; step++)
             {
-                var t = step / 16d; var u = 1 - t;
-                path.Add(new(u*u*u*a.X + 3*u*u*t*b.X + 3*u*t*t*c.X + t*t*t*d.X,
-                    u*u*u*a.Y + 3*u*u*t*b.Y + 3*u*t*t*c.Y + t*t*t*d.Y));
+                var t = step / 8d;
+                path.Add(new(Curve(a.X, b.X, c.X, d.X, t), Curve(a.Y, b.Y, c.Y, d.Y, t)));
             }
         }
         path.Add(points[^1]);
         return path.ToImmutable();
     }
+
+    private static double Curve(double a, double b, double c, double d, double t) =>
+        0.5 * (2 * b + (c - a) * t + (2 * a - 5 * b + 4 * c - d) * t * t +
+            (3 * b - a - 3 * c + d) * t * t * t);
 }

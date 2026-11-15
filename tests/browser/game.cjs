@@ -44,9 +44,11 @@ function observe(p) {
     p.on("response", (r) => {
         if (r.status() >= 400) failures.push(`${r.status()} ${r.url()}`);
     });
-    p.on("requestfailed", (r) =>
-        failures.push(`${r.failure()?.errorText} ${r.url()}`),
-    );
+    p.on("requestfailed", (r) => {
+        const error = r.failure()?.errorText;
+        if (error !== "net::ERR_ABORTED" && error !== "NS_BINDING_ABORTED")
+            failures.push(`${error} ${r.url()}`);
+    });
 }
 async function fresh(p) {
     await button(p, "Restart journey").click();

@@ -2,6 +2,11 @@
 
 A tower defence game made with C# and Blazor WebAssembly.
 
+## Play online
+
+[Open Thornwatch](https://f1j1tun1.github.io/IFP_Final/) in your browser and choose **New journey**.
+No installation is needed. Works on computers and phones; saves stay in the browser on each device.
+
 ## Run on Windows
 
 1. Install the [.NET 10 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0).
